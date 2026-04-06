@@ -22,7 +22,7 @@ fun MainScreen(innerPadding: PaddingValues, onNavigate: () -> Unit) {
                 onNavigate ()
             }
         ) {
-            Text("Текст")
+            Text("Текстик")
         }
     }
 
