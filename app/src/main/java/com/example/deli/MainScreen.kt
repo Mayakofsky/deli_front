@@ -94,6 +94,7 @@ fun MainScreen(
     val shadowColor = if (isDarkTheme) Color(0xFF000000) else Color(0xFFBDBDBD)
     val subtitleColor = if (isDarkTheme) Color(0xFFBDBDBD) else Color(0xFF757575)
 
+    // основной контейнер экрана с фоном и выравниванием по центру
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -101,15 +102,18 @@ fun MainScreen(
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
+        // вертикально размещает элементы по центру
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // плавно показывает и скрывает заголовок
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(1500)),
                 exit = fadeOut(animationSpec = tween(800))
             ) {
+                // отображает название приложения с тенью и анимацией масштаба
                 Text(
                     text = "DELI",
                     style = TextStyle(
@@ -126,13 +130,16 @@ fun MainScreen(
                 )
             }
 
+            // создает отступ между заголовком и подзаголовком
             Spacer(modifier = Modifier.height(16.dp))
 
+            // плавно показывает и скрывает подзаголовок
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(2000)),
                 exit = fadeOut(animationSpec = tween(800))
             ) {
+                // отображает короткое описание приложения
                 Text(
                     text = "Делим расходы просто",
                     style = TextStyle(
@@ -142,14 +149,17 @@ fun MainScreen(
                 )
             }
 
+            // создает отступ перед кнопкой
             Spacer(modifier = Modifier.height(48.dp))
 
             if (isFirstLaunch) {
+                // показывает кнопку только при первом запуске
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(animationSpec = tween(2500)),
                     exit = fadeOut(animationSpec = tween(500))
                 ) {
+                    // кнопка сохраняет первый запуск и выполняет переход дальше
                     Button(
                         onClick = {
                             prefs.edit()
@@ -166,6 +176,7 @@ fun MainScreen(
                         },
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
+                        // текст внутри кнопки
                         Text(
                             text = "Начать",
                             fontSize = 18.sp
