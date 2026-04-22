@@ -78,51 +78,85 @@ fun ThirdMainScreen(
     val tabs = listOf("События", "Должники")
 
     if (dolzhnikToDelete != null) {
+        // показывает диалог подтверждения удаления должника
         AlertDialog(
             onDismissRequest = { dolzhnikToDelete = null },
+
+            // заголовок диалога
             title = { Text("Удаление") },
+
+            // текст с вопросом об удалении
             text = { Text("Удалить должника \"${dolzhnikToDelete!!.name}\"?") },
+
+            // кнопка подтверждает удаление должника
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteDolzhnik(dolzhnikToDelete!!)
                     dolzhnikToDelete = null
-                }) { Text("Удалить", color = MaterialTheme.colorScheme.error) }
+                }) {
+                    // текст кнопки удаления
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
             },
+
+            // кнопка закрывает диалог без удаления
             dismissButton = {
-                TextButton(onClick = { dolzhnikToDelete = null }) { Text("Отмена") }
+                TextButton(onClick = { dolzhnikToDelete = null }) {
+                    // текст кнопки отмены
+                    Text("Отмена")
+                }
             }
         )
     }
 
     if (sobitieToDelete != null) {
+        // показывает диалог подтверждения удаления события
         AlertDialog(
             onDismissRequest = { sobitieToDelete = null },
+
+            // заголовок диалога
             title = { Text("Удаление") },
+
+            // текст с вопросом об удалении события
             text = { Text("Удалить событие от ${sobitieToDelete!!.date}?") },
+
+            // кнопка подтверждает удаление события
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteSobitie(sobitieToDelete!!)
                     sobitieToDelete = null
-                }) { Text("Удалить", color = MaterialTheme.colorScheme.error) }
+                }) {
+                    // текст кнопки удаления
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
             },
+
+            // кнопка закрывает диалог без удаления
             dismissButton = {
-                TextButton(onClick = { sobitieToDelete = null }) { Text("Отмена") }
+                TextButton(onClick = { sobitieToDelete = null }) {
+                    // текст кнопки отмены
+                    Text("Отмена")
+                }
             }
         )
     }
 
+    // основной вертикальный контейнер экрана
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
+        // верхняя строка с логотипом и кнопкой профиля
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // блок с названием приложения
             Column {
+                // отображает название приложения
                 Text(
                     text = "DELI",
                     style = MaterialTheme.typography.headlineMedium,
@@ -130,10 +164,12 @@ fun ThirdMainScreen(
                 )
             }
 
+            // кнопка открывает экран профиля
             IconButton(
                 onClick = onProfile,
                 modifier = Modifier.size(48.dp)
             ) {
+                // иконка профиля
                 Icon(
                     Icons.Default.Person,
                     contentDescription = "Профиль",
@@ -142,19 +178,24 @@ fun ThirdMainScreen(
             }
         }
 
+        // отступ после верхней панели
         Spacer(modifier = Modifier.height(16.dp))
 
+        // строка с быстрыми действиями
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // карточка для перехода к добавлению события
             QuickActionCard(
                 title = "Событие",
                 icon = Icons.Default.Receipt,
                 onClick = onDobavitSobitie,
                 modifier = Modifier.weight(1f),
-                isPrimary = false   // ← было true, стало false
+                isPrimary = false
             )
+
+            // карточка для перехода к добавлению должника
             QuickActionCard(
                 title = "Должник",
                 icon = Icons.Default.PersonAdd,
@@ -162,6 +203,8 @@ fun ThirdMainScreen(
                 modifier = Modifier.weight(1f),
                 isPrimary = false
             )
+
+            // карточка для перехода к друзьям
             QuickActionCard(
                 title = "Друзья",
                 icon = Icons.Default.Group,
@@ -171,13 +214,16 @@ fun ThirdMainScreen(
             )
         }
 
+        // отступ перед вкладками
         Spacer(modifier = Modifier.height(16.dp))
 
+        // строка вкладок для переключения между событиями и должниками
         TabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
             indicator = { tabPositions ->
+                // показывает индикатор под активной вкладкой
                 TabRowDefaults.SecondaryIndicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
                     color = MaterialTheme.colorScheme.primary
@@ -185,10 +231,12 @@ fun ThirdMainScreen(
             }
         ) {
             tabs.forEachIndexed { index, title ->
+                // вкладка переключает страницу пейджера
                 Tab(
                     selected = pagerState.currentPage == index,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                     text = {
+                        // отображает название вкладки
                         Text(
                             text = title,
                             fontWeight = if (pagerState.currentPage == index)
@@ -199,8 +247,10 @@ fun ThirdMainScreen(
             }
         }
 
+        // небольшой отступ после вкладок
         Spacer(modifier = Modifier.height(8.dp))
 
+        // контейнер с перелистыванием страниц
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
@@ -208,13 +258,16 @@ fun ThirdMainScreen(
             when (page) {
                 0 -> {
                     if (sobitiya.isEmpty()) {
+                        // показывает заглушку если событий нет
                         EmptyPlaceholder("Пока нет событий")
                     } else {
+                        // показывает список событий
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(vertical = 4.dp)
                         ) {
                             items(sobitiya) { sobitie ->
+                                // карточка отдельного события
                                 SobitieCard(
                                     sobitie = sobitie,
                                     onDelete = { sobitieToDelete = sobitie },
@@ -224,15 +277,19 @@ fun ThirdMainScreen(
                         }
                     }
                 }
+
                 1 -> {
                     if (dolzhniki.isEmpty()) {
+                        // показывает заглушку если должников нет
                         EmptyPlaceholder("Пока нет должников")
                     } else {
+                        // показывает список должников
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(vertical = 4.dp)
                         ) {
                             items(dolzhniki) { dolzhnik ->
+                                // карточка отдельного должника
                                 DolzhnikCard(
                                     dolzhnik = dolzhnik,
                                     onDelete = { dolzhnikToDelete = dolzhnik },
@@ -255,6 +312,7 @@ fun QuickActionCard(
     modifier: Modifier = Modifier,
     isPrimary: Boolean = false
 ) {
+    // карточка выполняет быстрое действие по нажатию
     Card(
         onClick = onClick,
         modifier = modifier.height(90.dp),
@@ -266,6 +324,7 @@ fun QuickActionCard(
                 MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
+        // размещает иконку и текст по центру карточки
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -273,6 +332,7 @@ fun QuickActionCard(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // отображает иконку действия
             Icon(
                 imageVector = icon,
                 contentDescription = null,
@@ -281,7 +341,11 @@ fun QuickActionCard(
                 else
                     MaterialTheme.colorScheme.onSecondaryContainer
             )
+
+            // отступ между иконкой и текстом
             Spacer(modifier = Modifier.height(4.dp))
+
+            // отображает название действия
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
@@ -297,10 +361,12 @@ fun QuickActionCard(
 
 @Composable
 fun EmptyPlaceholder(text: String) {
+    // контейнер для сообщения о пустом списке
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // показывает текст-заглушку
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
@@ -319,6 +385,7 @@ fun SobitieCard(
         sobitie.totalAmount / sobitie.participants.size
     } else 0.0
 
+    // карточка с информацией о событии
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -326,18 +393,24 @@ fun SobitieCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
+        // размещает содержимое карточки вертикально
         Column(modifier = Modifier.padding(14.dp)) {
+            // верхняя строка с датой и суммой
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // блок с датой и количеством участников
                 Column {
+                    // отображает дату события
                     Text(
                         text = sobitie.date.ifBlank { "Без даты" },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+
+                    // показывает количество участников
                     Text(
                         text = "${sobitie.participants.size} участников",
                         style = MaterialTheme.typography.bodySmall,
@@ -345,6 +418,7 @@ fun SobitieCard(
                     )
                 }
 
+                // показывает общую сумму события
                 Text(
                     text = "${"%.0f".format(sobitie.totalAmount)} ₽",
                     style = MaterialTheme.typography.titleLarge,
@@ -353,26 +427,35 @@ fun SobitieCard(
                 )
             }
 
+            // отступ перед суммой на человека
             Spacer(modifier = Modifier.height(6.dp))
 
+            // показывает среднюю сумму на одного участника
             Text(
                 text = "На каждого: ${"%.2f".format(equalShare)} ₽",
                 style = MaterialTheme.typography.bodyMedium
             )
 
+            // отступ перед кнопками
             Spacer(modifier = Modifier.height(10.dp))
 
+            // строка с действиями для события
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // кнопка отмечает событие как оплаченное
                 FilledTonalButton(
                     onClick = onPay,
                     modifier = Modifier.weight(1f)
                 ) {
+                    // текст кнопки оплаты
                     Text("Оплатить")
                 }
+
+                // кнопка удаляет событие
                 IconButton(onClick = onDelete) {
+                    // иконка удаления
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Удалить",
@@ -390,6 +473,7 @@ fun DolzhnikCard(
     onDelete: () -> Unit,
     onPay: () -> Unit
 ) {
+    // карточка с информацией о должнике
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -397,17 +481,21 @@ fun DolzhnikCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
+        // размещает содержимое карточки вертикально
         Column(modifier = Modifier.padding(14.dp)) {
+            // верхняя строка с данными должника и суммой
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // блок с аватаром и основной информацией
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
+                    // контейнер для фото или стандартной иконки
                     Surface(
                         modifier = Modifier
                             .size(48.dp)
@@ -415,6 +503,7 @@ fun DolzhnikCard(
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         if (dolzhnik.photoUri != null) {
+                            // показывает фото должника
                             Image(
                                 painter = rememberAsyncImagePainter(dolzhnik.photoUri),
                                 contentDescription = "Фото",
@@ -422,7 +511,9 @@ fun DolzhnikCard(
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
+                            // показывает заглушку если фото нет
                             Box(contentAlignment = Alignment.Center) {
+                                // иконка пользователя вместо фото
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = null,
@@ -433,13 +524,17 @@ fun DolzhnikCard(
                         }
                     }
 
+                    // блок с именем и дедлайном
                     Column {
+                        // отображает имя должника
                         Text(
                             text = dolzhnik.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+
                         if (dolzhnik.deadline.isNotBlank()) {
+                            // показывает срок возврата долга
                             Text(
                                 text = "До ${dolzhnik.deadline}",
                                 style = MaterialTheme.typography.bodySmall,
@@ -449,6 +544,7 @@ fun DolzhnikCard(
                     }
                 }
 
+                // показывает сумму долга
                 Text(
                     text = "${dolzhnik.amount} ₽",
                     style = MaterialTheme.typography.titleLarge,
@@ -457,19 +553,26 @@ fun DolzhnikCard(
                 )
             }
 
+            // отступ перед кнопками
             Spacer(modifier = Modifier.height(10.dp))
 
+            // строка с действиями для должника
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // кнопка отмечает долг как оплаченный
                 FilledTonalButton(
                     onClick = onPay,
                     modifier = Modifier.weight(1f)
                 ) {
+                    // текст кнопки оплаты
                     Text("Оплатить")
                 }
+
+                // кнопка удаляет должника
                 IconButton(onClick = onDelete) {
+                    // иконка удаления
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Удалить",
