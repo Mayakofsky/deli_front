@@ -40,44 +40,70 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // создает канал для отправки уведомлений
         NotificationHelper.createChannel(this)
 
         setContent {
+            // получает основной viewmodel для темы и профиля
             val viewModel: MainViewModel = viewModel()
+
+            // получает viewmodel для работы с друзьями
             val friendsViewModel: FriendsViewModel = viewModel()
+
+            // получает текущий контекст приложения
             val context = LocalContext.current
 
+            // загружает сохраненную тему приложения
             viewModel.loadDarkTheme(context)
 
+            // отслеживает текущее состояние темы
             val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+
+            // хранит список должников в памяти
             val dolzhniki = remember { mutableStateListOf<Dolzhnik>() }
+
+            // хранит список событий в памяти
             val sobitiya = remember { mutableStateListOf<Sobitie>() }
 
+            // получает список друзей
             val friends by friendsViewModel.friends.collectAsState()
+
+            // получает список отправленных заявок
             val sentRequests by friendsViewModel.sentRequests.collectAsState()
+
+            // получает список входящих заявок
             val incomingRequests by friendsViewModel.incomingRequests.collectAsState()
 
+            // создает контроллер навигации между экранами
             val navController = rememberNavController()
 
+            // запрашивает разрешение на уведомления
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
             ) { _ -> }
 
+            // запускает запрос разрешения при старте приложения
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
 
+            // применяет тему ко всему интерфейсу
             DELITheme(darkTheme = isDarkTheme) {
+
+                // основной контейнер экрана
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
                 ) { innerPadding ->
+
+                    // задает все маршруты навигации между экранами
                     NavHost(
                         navController = navController,
                         startDestination = "screen_1"
                     ) {
+                        // первый экран приветствия
                         composable(
                             route = "screen_1",
                             exitTransition = { fadeOut(animationSpec = tween(800)) }
@@ -89,6 +115,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // второй экран перед переходом в главное меню
                         composable(
                             route = "screen_2",
                             enterTransition = { fadeIn(animationSpec = tween(800)) }
@@ -99,6 +126,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // главный экран со списками долгов и событий
                         composable("screen_3") {
                             ThirdMainScreen(
                                 innerPadding = innerPadding,
@@ -108,6 +136,8 @@ class MainActivity : ComponentActivity() {
                                 onDobavitDolshnika = { navController.navigate("screen_5") },
                                 onProfile = { navController.navigate("screen_6") },
                                 onFriends = { navController.navigate("screen_7") },
+
+                                // удаляет должника и отменяет его уведомления
                                 onDeleteDolzhnik = { dolzhnik ->
                                     NotificationScheduler.cancelDeadlineNotifications(
                                         context = context,
@@ -115,6 +145,8 @@ class MainActivity : ComponentActivity() {
                                     )
                                     dolzhniki.remove(dolzhnik)
                                 },
+
+                                // удаляет событие и отменяет его уведомления
                                 onDeleteSobitie = { sobitie ->
                                     NotificationScheduler.cancelDeadlineNotifications(
                                         context = context,
@@ -122,6 +154,8 @@ class MainActivity : ComponentActivity() {
                                     )
                                     sobitiya.remove(sobitie)
                                 },
+
+                                // отмечает долг как оплаченный и убирает уведомления
                                 onPayDolzhnik = { dolzhnik ->
                                     NotificationScheduler.cancelDeadlineNotifications(
                                         context = context,
@@ -129,6 +163,8 @@ class MainActivity : ComponentActivity() {
                                     )
                                     dolzhniki.remove(dolzhnik)
                                 },
+
+                                // отмечает событие как оплаченноe и убирает уведомления
                                 onPaySobitie = { sobitie ->
                                     NotificationScheduler.cancelDeadlineNotifications(
                                         context = context,
@@ -139,11 +175,14 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // экран добавления нового события
                         composable("screen_4") {
                             DobavitSobitie(
                                 innerPadding = innerPadding,
-                                friends = friends,   // ← добавь
+                                friends = friends,
                                 onBack = { navController.popBackStack() },
+
+                                // добавляет событие в список и создает уведомления
                                 onCreateSobitie = { sobitie ->
                                     sobitiya.add(sobitie)
 
@@ -151,12 +190,14 @@ class MainActivity : ComponentActivity() {
                                         sobitie.totalAmount / sobitie.participants.size
                                     else 0.0
 
+                                    // считает сумму для каждого участника
                                     val participantsInfo = sobitie.participants.joinToString("\n") { p ->
                                         val extra = p.extraAmount.toDoubleOrNull() ?: 0.0
                                         val total = equalShare + extra
                                         "• ${p.name}: ${"%.2f".format(total)} ₽"
                                     }
 
+                                    // формирует текст уведомления по событию
                                     val message = """
                                         Событие от ${sobitie.date}
                                         Общая сумма: ${"%.2f".format(sobitie.totalAmount)} ₽
@@ -165,6 +206,7 @@ class MainActivity : ComponentActivity() {
                                         $participantsInfo
                                     """.trimIndent()
 
+                                    // планирует уведомления о дедлайне события
                                     NotificationScheduler.scheduleDeadlineNotifications(
                                         context = context,
                                         title = "Дедлайн события",
@@ -176,20 +218,25 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // экран добавления нового должника
                         composable("screen_5") {
                             DobavitDolshnika(
                                 innerPadding = innerPadding,
-                                friends = friends,   // ← добавь
+                                friends = friends,
                                 onThirdMainScreen = { navController.popBackStack() },
                                 onBack = { navController.popBackStack() },
+
+                                // добавляет должника в список и создает уведомления
                                 onAddDolzhnik = { dolzhnik ->
                                     dolzhniki.add(dolzhnik)
 
+                                    // формирует текст уведомления по долгу
                                     val message = """
                                         ${dolzhnik.name} должен вам ${dolzhnik.amount} ₽
                                         Дедлайн: ${dolzhnik.deadline}
                                     """.trimIndent()
 
+                                    // планирует уведомления о дедлайне долга
                                     NotificationScheduler.scheduleDeadlineNotifications(
                                         context = context,
                                         title = "Дедлайн долга",
@@ -201,14 +248,20 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // экран профиля пользователя
                         composable("screen_6") {
+                            // получает имя пользователя
                             val userName by viewModel.userName.collectAsState()
+
+                            // получает фото пользователя
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
 
                             Profile(
                                 innerPadding = innerPadding,
                                 onBack = { navController.popBackStack() },
                                 isDarkTheme = isDarkTheme,
+
+                                // переключает тему и сохраняет выбор
                                 onToggleTheme = {
                                     viewModel.toggleTheme()
                                     viewModel.saveDarkTheme(context, !isDarkTheme)
@@ -217,12 +270,15 @@ class MainActivity : ComponentActivity() {
                                 sobitiya = sobitiya,
                                 userName = userName,
                                 userPhotoUri = userPhotoUri,
+
+                                // обновляет данные профиля
                                 onUpdateProfile = { name, photo ->
                                     viewModel.updateProfile(context, name, photo)
                                 }
                             )
                         }
 
+                        // экран друзей и заявок
                         composable("screen_7") {
                             FriendsScreen(
                                 innerPadding = innerPadding,
@@ -230,11 +286,23 @@ class MainActivity : ComponentActivity() {
                                 friends = friends,
                                 sentRequests = sentRequests,
                                 incomingRequests = incomingRequests,
+
+                                // ищет пользователей по запросу
                                 onSearch = { query -> friendsViewModel.searchUsers(query) },
+
+                                // отправляет заявку в друзья
                                 onSendRequest = { user -> friendsViewModel.sendFriendRequest(user) },
+
+                                // отменяет отправленную заявку
                                 onCancelRequest = { user -> friendsViewModel.cancelSentRequest(user) },
+
+                                // принимает входящую заявку
                                 onAcceptRequest = { user -> friendsViewModel.acceptIncomingRequest(user) },
+
+                                // отклоняет входящую заявку
                                 onDeclineRequest = { user -> friendsViewModel.declineIncomingRequest(user) },
+
+                                // удаляет пользователя из друзей
                                 onRemoveFriend = { user -> friendsViewModel.removeFriend(user) }
                             )
                         }
