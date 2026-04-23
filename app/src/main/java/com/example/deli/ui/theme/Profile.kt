@@ -60,27 +60,30 @@ fun Profile(
     userPhotoUri: String?,
     onUpdateProfile: (String, String?) -> Unit,
 ) {
-    // Режим редактирования
+    // управляет режимом редактирования профиля
     var isEditing by remember { mutableStateOf(false) }
 
-    // Временные значения при редактировании
+    // хранит временное имя пользователя при редактировании
     var editedName by remember { mutableStateOf(userName) }
+
+    // хранит временное фото пользователя при редактировании
     var editedPhotoUri by remember { mutableStateOf(userPhotoUri) }
 
-    // Выбор фото из галереи
+    // открывает галерею для выбора фото профиля
     val photoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { editedPhotoUri = it.toString() }
     }
 
+    // основной вертикальный контейнер экрана
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // Аватар с возможностью редактирования
+        // блок с аватаром пользователя по центру
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -88,11 +91,13 @@ fun Profile(
             contentAlignment = Alignment.Center
         ) {
             Box {
+                // контейнер для фото профиля
                 Surface(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
                         .then(
+                            // делает аватар кликабельным в режиме редактирования
                             if (isEditing) Modifier.clickable {
                                 photoLauncher.launch("image/*")
                             } else Modifier
@@ -100,6 +105,7 @@ fun Profile(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     if (editedPhotoUri != null) {
+                        // показывает фото пользователя
                         Image(
                             painter = rememberAsyncImagePainter(editedPhotoUri),
                             contentDescription = "Аватар",
@@ -107,6 +113,7 @@ fun Profile(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
+                        // показывает иконку если фото не выбрано
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Person,
@@ -118,8 +125,8 @@ fun Profile(
                     }
                 }
 
-                // Иконка редактирования на аватаре
                 if (isEditing) {
+                    // кнопка смены фото поверх аватара
                     Surface(
                         modifier = Modifier
                             .size(32.dp)
@@ -129,6 +136,7 @@ fun Profile(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Box(contentAlignment = Alignment.Center) {
+                            // иконка карандаша на аватаре
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Изменить фото",
@@ -141,8 +149,8 @@ fun Profile(
             }
         }
 
-        // Имя пользователя или поле редактирования
         if (isEditing) {
+            // поле для редактирования имени пользователя
             OutlinedTextField(
                 value = editedName,
                 onValueChange = { editedName = it },
@@ -151,11 +159,13 @@ fun Profile(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
+            // строка с именем и кнопкой редактирования
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // показывает имя пользователя
                 Text(
                     text = userName.ifBlank { "Пользователь" },
                     style = MaterialTheme.typography.headlineSmall,
@@ -163,7 +173,9 @@ fun Profile(
                     textAlign = TextAlign.Center
                 )
 
+                // кнопка переключает в режим редактирования
                 IconButton(onClick = { isEditing = true }) {
+                    // иконка карандаша для редактирования
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = "Редактировать",
@@ -173,53 +185,64 @@ fun Profile(
             }
         }
 
-        // Кнопки сохранения/отмены в режиме редактирования
         if (isEditing) {
+            // отступ перед кнопками сохранения
             Spacer(modifier = Modifier.height(12.dp))
 
+            // строка с кнопками отмены и сохранения
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // кнопка сбрасывает изменения и выходит из редактирования
                 OutlinedButton(
                     onClick = {
-                        // Отмена изменений
                         editedName = userName
                         editedPhotoUri = userPhotoUri
                         isEditing = false
                     },
                     modifier = Modifier.weight(1f)
                 ) {
+                    // текст кнопки отмены
                     Text("Отмена")
                 }
 
+                // кнопка сохраняет новые данные профиля
                 Button(
                     onClick = {
-                        // Сохранение
                         onUpdateProfile(editedName, editedPhotoUri)
                         isEditing = false
                     },
                     modifier = Modifier.weight(1f)
                 ) {
+                    // иконка галочки на кнопке сохранения
                     Icon(Icons.Default.Check, contentDescription = null)
+
+                    // отступ между иконкой и текстом
                     Spacer(modifier = Modifier.size(8.dp))
+
+                    // текст кнопки сохранения
                     Text("Сохранить")
                 }
             }
         }
 
+        // отступ перед статистикой
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Статистика
+        // строка с карточками статистики
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // карточка с количеством событий
             StatCard(
                 value = sobitiya.size.toString(),
                 label = "События",
                 modifier = Modifier.weight(1f)
             )
+
+            // карточка с количеством должников
             StatCard(
                 value = dolzhniki.size.toString(),
                 label = "Должники",
@@ -227,11 +250,13 @@ fun Profile(
             )
         }
 
+        // отступ перед суммой долгов
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Общая сумма долгов
+        // считает общую сумму всех долгов
         val totalDebt = dolzhniki.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
 
+        // карточка показывает общую сумму долгов
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -239,13 +264,19 @@ fun Profile(
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
+            // вертикально размещает подпись и сумму
             Column(modifier = Modifier.padding(16.dp)) {
+                // подпись над суммой
                 Text(
                     text = "Общая сумма долгов",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )
+
+                // отступ между подписью и суммой
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // показывает итоговую сумму долгов
                 Text(
                     text = "${"%.2f".format(totalDebt)} ₽",
                     style = MaterialTheme.typography.headlineMedium,
@@ -255,16 +286,20 @@ fun Profile(
             }
         }
 
+        // отступ перед настройками
         Spacer(modifier = Modifier.height(16.dp))
 
+        // заголовок блока настроек
         Text(
             text = "Настройки",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
 
+        // отступ перед карточкой настроек
         Spacer(modifier = Modifier.height(8.dp))
 
+        // карточка с переключателем темы
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -272,6 +307,7 @@ fun Profile(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             )
         ) {
+            // строка с иконкой, текстом и переключателем
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -279,20 +315,26 @@ fun Profile(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // блок с иконкой и названием настройки
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // иконка тёмной темы
                     Icon(
                         Icons.Default.DarkMode,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
+
+                    // название настройки
                     Text(
                         text = "Тёмная тема",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
+
+                // переключатель включает и выключает тёмную тему
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = { onToggleTheme() }
@@ -300,8 +342,10 @@ fun Profile(
             }
         }
 
+        // заполняет оставшееся пространство перед кнопкой назад
         Spacer(modifier = Modifier.weight(1f))
 
+        // кнопка возвращает на предыдущий экран
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier
@@ -319,6 +363,7 @@ fun StatCard(
     label: String,
     modifier: Modifier = Modifier
 ) {
+    // карточка показывает одну единицу статистики
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -326,23 +371,26 @@ fun StatCard(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
+        // вертикально размещает число и подпись
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // показывает числовое значение статистики
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
+
+            // показывает подпись к числу
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
-
         }
     }
 }
