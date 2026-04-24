@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class FriendsViewModel : ViewModel() {
 
-    // Все пользователи (имитация базы — потом заменить на сервер)
+    // локальная имитация базы всех пользователей
     private val _allUsers = MutableStateFlow(
         listOf(
             User("1", "Иван", "Петров", "+79111111111", "ivan@mail.ru"),
@@ -21,93 +21,91 @@ class FriendsViewModel : ViewModel() {
             User("6", "Анна", "Попова", "+79666666666", "anna@mail.ru"),
         )
     )
+
+    // публичный поток всех пользователей только для чтения
     val allUsers: StateFlow<List<User>> = _allUsers.asStateFlow()
 
-    // Друзья
+    // хранит список текущих друзей
     private val _friends = MutableStateFlow<List<FriendRecord>>(emptyList())
+
+    // публичный поток друзей только для чтения
     val friends: StateFlow<List<FriendRecord>> = _friends.asStateFlow()
 
-    // Отправленные заявки (ожидают принятия)
+    // хранит отправленные заявки в друзья которые ждут ответа
     private val _sentRequests = MutableStateFlow<List<FriendRecord>>(emptyList())
+
+    // публичный поток отправленных заявок только для чтения
     val sentRequests: StateFlow<List<FriendRecord>> = _sentRequests.asStateFlow()
 
-    // Входящие заявки (ждут моего ответа)
+    // хранит входящие заявки которые ждут моего ответа
     private val _incomingRequests = MutableStateFlow<List<FriendRecord>>(emptyList())
+
+    // публичный поток входящих заявок только для чтения
     val incomingRequests: StateFlow<List<FriendRecord>> = _incomingRequests.asStateFlow()
 
-    /**
-     * Поиск пользователей по имени, фамилии, телефону или почте
-     */
+    // ищет пользователей по имени, фамилии, телефону или email
     fun searchUsers(query: String): List<User> {
+
+        // возвращает пустой список если запрос пустой
         if (query.isBlank()) return emptyList()
 
+        // приводит запрос к нижнему регистру для сравнения
         val lowerQuery = query.lowercase().trim()
 
         return _allUsers.value.filter { user ->
+            // проверяет совпадение по любому из полей пользователя
             user.firstName.lowercase().contains(lowerQuery) ||
                     user.lastName.lowercase().contains(lowerQuery) ||
                     user.phone.contains(lowerQuery) ||
                     user.email.lowercase().contains(lowerQuery) ||
                     "${user.firstName} ${user.lastName}".lowercase().contains(lowerQuery)
         }.filter { user ->
-            // Исключаем тех, кто уже в друзьях или с активной заявкой
+            // исключает пользователей которые уже есть в друзьях или заявках
             _friends.value.none { it.user.id == user.id } &&
                     _sentRequests.value.none { it.user.id == user.id } &&
                     _incomingRequests.value.none { it.user.id == user.id }
         }
     }
 
-    /**
-     * Отправить заявку в друзья
-     */
+    // добавляет пользователя в список отправленных заявок
     fun sendFriendRequest(user: User) {
         val newRequest = FriendRecord(user, FriendRequestStatus.SENT)
         _sentRequests.value = _sentRequests.value + newRequest
-
-        // ИМИТАЦИЯ: создаём входящую заявку с этого же пользователя для теста
-        // В реальности это происходит на сервере
     }
 
-    /**
-     * Отменить отправленную заявку
-     */
+    // удаляет пользователя из списка отправленных заявок
     fun cancelSentRequest(user: User) {
         _sentRequests.value = _sentRequests.value.filter { it.user.id != user.id }
     }
 
-    /**
-     * Принять входящую заявку
-     */
+    // переносит пользователя из входящих заявок в список друзей
     fun acceptIncomingRequest(user: User) {
         _incomingRequests.value = _incomingRequests.value.filter { it.user.id != user.id }
         _friends.value = _friends.value + FriendRecord(user, FriendRequestStatus.ACCEPTED)
     }
 
-    /**
-     * Отклонить входящую заявку
-     */
+    // удаляет пользователя из списка входящих заявок без добавления в друзья
     fun declineIncomingRequest(user: User) {
         _incomingRequests.value = _incomingRequests.value.filter { it.user.id != user.id }
     }
 
-    /**
-     * Удалить из друзей
-     */
+    // удаляет пользователя из списка друзей
     fun removeFriend(user: User) {
         _friends.value = _friends.value.filter { it.user.id != user.id }
     }
 
-    /**
-     * ТЕСТ: имитировать входящую заявку
-     */
+    // симулирует входящую заявку от случайного пользователя
     fun simulateIncomingRequest() {
+
+        // выбирает случайного пользователя из базы
         val testUser = _allUsers.value.random()
 
-        // Проверяем, что его ещё нет нигде
+        // добавляет заявку только если пользователь не задействован нигде
         if (_friends.value.none { it.user.id == testUser.id } &&
             _sentRequests.value.none { it.user.id == testUser.id } &&
             _incomingRequests.value.none { it.user.id == testUser.id }
         ) {
+            // добавляет входящую заявку от выбранного пользователя
             _incomingRequests.value = _incomingRequests.value +
                     FriendRecord(testUser, FriendRequestStatus.PENDING)
         }
