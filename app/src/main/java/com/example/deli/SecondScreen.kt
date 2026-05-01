@@ -26,10 +26,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -40,17 +40,42 @@ fun SecondScreen(
 ) {
     val scope = rememberCoroutineScope()
 
+    // режим экрана: true = регистрация, false = вход
     var isRegistration by remember { mutableStateOf(true) }
+
+    // имя пользователя, только для регистрации
     var firstName by remember { mutableStateOf("") }
+
+    // фамилия пользователя, только для регистрации
     var secondName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
+
+    // почта пользователя, используется в обоих режимах
     var email by remember { mutableStateOf("") }
-    var link by remember { mutableStateOf("") }
+
+    // пароль пользователя, используется в обоих режимах
+    var password by remember { mutableStateOf("") }
+
+    // повтор пароля, только для регистрации
+    var confirmPassword by remember { mutableStateOf("") }
+
+    // показывать ли сообщения об ошибках валидации
     var showError by remember { mutableStateOf(false) }
 
-    val isLoginValid = firstName.isNotBlank() && secondName.isNotBlank() && phone.isNotBlank()
-    val isRegisterValid = isLoginValid && email.isNotBlank()
+    // true если пароль и повтор пароля совпадают
+    val passwordsMatch = password == confirmPassword
 
+    // true если все поля для входа заполнены
+    val isLoginValid = email.isNotBlank() && password.isNotBlank()
+
+    // true если все поля для регистрации заполнены и пароли совпадают
+    val isRegisterValid = firstName.isNotBlank() &&
+            secondName.isNotBlank() &&
+            email.isNotBlank() &&
+            password.isNotBlank() &&
+            confirmPassword.isNotBlank() &&
+            passwordsMatch
+
+    // основной контейнер экрана
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,13 +83,14 @@ fun SecondScreen(
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // заголовок экрана, меняется в зависимости от режима (вход/регистрация)
+        // заголовок экрана, меняется в зависимости от режима
         Text(
             text = if (isRegistration) "Регистрация" else "Вход",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
 
+        // отступ после заголовка
         Spacer(modifier = Modifier.height(4.dp))
 
         // подзаголовок с пояснением действия
@@ -74,13 +100,14 @@ fun SecondScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        // отступ перед переключателем режимов
         Spacer(modifier = Modifier.height(16.dp))
 
         // переключатель между режимами входа и регистрации
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // кнопка режима "Вход"
+            // кнопка переключает в режим входа
             SegmentedButton(
                 selected = !isRegistration,
                 onClick = {
@@ -91,7 +118,8 @@ fun SecondScreen(
             ) {
                 Text("Вход")
             }
-            // кнопка режима "Регистрация"
+
+            // кнопка переключает в режим регистрации
             SegmentedButton(
                 selected = isRegistration,
                 onClick = {
@@ -104,6 +132,7 @@ fun SecondScreen(
             }
         }
 
+        // отступ перед полями формы
         Spacer(modifier = Modifier.height(16.dp))
 
         // прокручиваемая область с полями ввода
@@ -113,63 +142,80 @@ fun SecondScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // поле ввода имени с валидацией
-            OutlinedTextField(
-                value = firstName,
-                onValueChange = { firstName = it },
-                label = { Text("Имя") },
-                isError = showError && firstName.isBlank(),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // поле ввода фамилии с валидацией
-            OutlinedTextField(
-                value = secondName,
-                onValueChange = { secondName = it },
-                label = { Text("Фамилия") },
-                isError = showError && secondName.isBlank(),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // поле ввода телефона с цифровой клавиатурой
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text("Номер телефона") },
-                isError = showError && phone.isBlank(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // дополнительные поля только для регистрации
+            // поля только для режима регистрации
             if (isRegistration) {
-                // поле ввода email с соответствующей клавиатурой
+
+                // поле ввода имени с валидацией
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Почта") },
-                    isError = showError && email.isBlank(),
+                    value = firstName,
+                    onValueChange = { firstName = it },
+                    label = { Text("Имя") },
+                    isError = showError && firstName.isBlank(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // необязательное поле для ссылки на перевод
+                // поле ввода фамилии с валидацией
                 OutlinedTextField(
-                    value = link,
-                    onValueChange = { link = it },
-                    label = { Text("Ссылка на перевод") },
-                    supportingText = { Text("Необязательно") },
+                    value = secondName,
+                    onValueChange = { secondName = it },
+                    label = { Text("Фамилия") },
+                    isError = showError && secondName.isBlank(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // сообщение об ошибке при незаполненных полях
-            if (showError) {
+            // поле ввода почты, используется в обоих режимах
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Почта") },
+                isError = showError && email.isBlank(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // поле ввода пароля, текст скрыт через PasswordVisualTransformation
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Пароль") },
+                isError = showError && password.isBlank(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // поле повтора пароля только для регистрации
+            if (isRegistration) {
+
+                // поле подтверждения пароля, показывает ошибку если пароли не совпадают
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Повторите пароль") },
+                    isError = showError && (confirmPassword.isBlank() || !passwordsMatch),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // сообщение что пароли не совпадают, показывается отдельно от общей ошибки
+                if (showError && confirmPassword.isNotBlank() && !passwordsMatch) {
+                    Text(
+                        text = "Пароли не совпадают",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            // сообщение об ошибке при незаполненных обязательных полях
+            if (showError && (if (isRegistration) !isRegisterValid else !isLoginValid)) {
                 Text(
                     text = "Заполните все обязательные поля",
                     style = MaterialTheme.typography.bodySmall,
@@ -178,9 +224,10 @@ fun SecondScreen(
             }
         }
 
+        // отступ перед кнопкой действия
         Spacer(modifier = Modifier.height(8.dp))
 
-        // основная кнопка подтверждения с логикой валидации и отправки данных
+        // кнопка подтверждения с логикой валидации
         Button(
             onClick = {
                 if (isRegistration) {
@@ -192,7 +239,7 @@ fun SecondScreen(
                                 val response = RetrofitClient.apiService.addUser(
                                     fName = firstName,
                                     lName = secondName,
-                                    url = link,
+                                    url = "",
                                     num = 100
                                 )
                                 Log.d("MY_SERVER", "Записали: $firstName, ID: ${response.id}")
@@ -200,18 +247,25 @@ fun SecondScreen(
                                 Log.e("MY_SERVER", "Ошибка: ${e.message}")
                             }
                         }
-                    } else showError = true
+                    } else {
+                        // показывает ошибки если поля не заполнены или пароли не совпадают
+                        showError = true
+                    }
                 } else {
                     if (isLoginValid) {
                         showError = false
                         onThirdMainScreen()
-                    } else showError = true
+                    } else {
+                        // показывает ошибки если почта или пароль не заполнены
+                        showError = true
+                    }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
+            // текст кнопки меняется в зависимости от режима
             Text(
                 text = if (isRegistration) "Зарегистрироваться" else "Войти",
                 style = MaterialTheme.typography.titleMedium
