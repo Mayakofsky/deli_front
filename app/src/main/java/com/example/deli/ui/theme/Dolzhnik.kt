@@ -2,6 +2,9 @@ package com.example.deli.ui.theme
 
 // модель данных одного должника
 data class Dolzhnik(
+    // название долга
+    val title: String = "",
+
     // имя должника
     val name: String,
 

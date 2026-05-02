@@ -1,7 +1,10 @@
 package com.example.deli.ui.theme
 
-// модель данных одного события с датой, суммой и участниками
+// модель данных одного события с названием, датой, суммой и участниками
 data class Sobitie(
+    // название события
+    val name: String = "",
+
     // дата события
     val date: String,
 
@@ -16,9 +19,6 @@ data class Sobitie(
 data class Participant(
     // имя участника
     val name: String = "",
-
-    // номер телефона участника
-    val phone: String = "",
 
     // дополнительная сумма сверх равной доли
     val extraAmount: String = ""

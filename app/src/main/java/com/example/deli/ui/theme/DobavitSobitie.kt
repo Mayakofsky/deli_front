@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -72,6 +73,9 @@ fun DobavitSobitie(
     // хранит список участников события
     val participants = remember { mutableStateListOf(Participant()) }
 
+    // хранит название события
+    var eventName by remember { mutableStateOf("") }
+
     // хранит общую сумму события
     var totalAmount by remember { mutableStateOf("") }
 
@@ -106,8 +110,6 @@ fun DobavitSobitie(
         // показывает диалог выбора даты
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-
-            // кнопка подтверждает выбор даты
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
@@ -116,20 +118,15 @@ fun DobavitSobitie(
                     }
                     showDatePicker = false
                 }) {
-                    // текст кнопки подтверждения
                     Text("OK")
                 }
             },
-
-            // кнопка закрывает календарь без выбора
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    // текст кнопки отмены
                     Text("Отмена")
                 }
             }
         ) {
-            // отображает календарь для выбора даты
             DatePicker(state = datePickerState)
         }
     }
@@ -138,17 +135,11 @@ fun DobavitSobitie(
         // показывает диалог выбора участников из друзей
         AlertDialog(
             onDismissRequest = { showFriendsDialog = false },
-
-            // заголовок диалога
             title = { Text("Выбрать из друзей") },
-
-            // основное содержимое диалога
             text = {
                 if (friends.isEmpty()) {
-                    // показывает сообщение если друзей нет
                     Text("У вас пока нет друзей")
                 } else {
-                    // показывает список друзей для выбора
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -157,8 +148,7 @@ fun DobavitSobitie(
                             Card(
                                 onClick = {
                                     val newParticipant = Participant(
-                                        name = "${friend.user.firstName} ${friend.user.lastName}",
-                                        phone = friend.user.phone
+                                        name = "${friend.user.firstName} ${friend.user.lastName}"
                                     )
                                     participants.add(newParticipant)
                                     showFriendsDialog = false
@@ -169,7 +159,6 @@ fun DobavitSobitie(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                                 )
                             ) {
-                                // размещает фото и данные друга в строку
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -177,7 +166,6 @@ fun DobavitSobitie(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    // контейнер для фото друга или иконки
                                     Surface(
                                         modifier = Modifier
                                             .size(40.dp)
@@ -185,7 +173,6 @@ fun DobavitSobitie(
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         if (friend.user.photoUri != null) {
-                                            // отображает фото друга
                                             Image(
                                                 painter = rememberAsyncImagePainter(friend.user.photoUri),
                                                 contentDescription = "Фото",
@@ -193,7 +180,6 @@ fun DobavitSobitie(
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         } else {
-                                            // показывает иконку если фото нет
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     Icons.Default.Person,
@@ -203,43 +189,30 @@ fun DobavitSobitie(
                                             }
                                         }
                                     }
-
-                                    // блок с именем и номером телефона
-                                    Column {
-                                        // показывает имя друга
-                                        Text(
-                                            text = "${friend.user.firstName} ${friend.user.lastName}",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-
-                                        // показывает номер телефона друга
-                                        Text(
-                                            text = friend.user.phone,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    // показывает только имя друга
+                                    Text(
+                                        text = "${friend.user.firstName} ${friend.user.lastName}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
                                 }
                             }
                         }
                     }
                 }
             },
-
-            // кнопка закрывает диалог
             confirmButton = {
                 TextButton(onClick = { showFriendsDialog = false }) {
-                    // текст кнопки закрытия
                     Text("Закрыть")
                 }
             }
         )
     }
 
-    // основной контейнер экрана
+    // основной контейнер экрана с отступом от шапки
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(innerPadding)
             .padding(24.dp)
     ) {
@@ -250,7 +223,6 @@ fun DobavitSobitie(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
-        // отступ после заголовка
         Spacer(modifier = Modifier.height(16.dp))
 
         // список всех блоков формы
@@ -258,6 +230,17 @@ fun DobavitSobitie(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            item {
+                // поле для ввода названия события
+                OutlinedTextField(
+                    value = eventName,
+                    onValueChange = { eventName = it },
+                    label = { Text("Название события") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             item {
                 // поле показывает выбранную дату события
                 OutlinedTextField(
@@ -267,7 +250,6 @@ fun DobavitSobitie(
                     readOnly = true,
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
-                        // кнопка открывает календарь
                         IconButton(onClick = { showDatePicker = true }) {
                             Text("📅")
                         }
@@ -292,16 +274,12 @@ fun DobavitSobitie(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // кнопка открывает галерею для выбора фото
                     FilledTonalButton(onClick = { photoLauncher.launch("image/*") }) {
                         Text("Прикрепить фото")
                     }
 
                     if (photoUri != null) {
-                        // отступ перед сообщением о выбранном фото
                         Spacer(modifier = Modifier.width(12.dp))
-
-                        // показывает что фото успешно выбрано
                         Text(
                             text = "Фото выбрано ✓",
                             style = MaterialTheme.typography.bodyMedium,
@@ -313,7 +291,6 @@ fun DobavitSobitie(
 
             if (photoUri != null) {
                 item {
-                    // показывает превью выбранного изображения
                     Image(
                         painter = rememberAsyncImagePainter(photoUri),
                         contentDescription = "Фото",
@@ -333,7 +310,6 @@ fun DobavitSobitie(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // заголовок блока участников
                     Text(
                         text = "Участники",
                         style = MaterialTheme.typography.titleLarge
@@ -348,7 +324,6 @@ fun DobavitSobitie(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-
                         // кнопка добавляет пустого участника вручную
                         IconButton(onClick = { participants.add(Participant()) }) {
                             Icon(
@@ -372,22 +347,18 @@ fun DobavitSobitie(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    // вертикально размещает поля участника
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // строка с номером участника и удалением
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // показывает номер участника
                             Text(
                                 text = "Участник ${index + 1}",
                                 style = MaterialTheme.typography.titleSmall
                             )
 
                             if (participants.size > 1) {
-                                // кнопка удаляет участника из списка
                                 IconButton(onClick = { participants.removeAt(index) }) {
                                     Icon(
                                         Icons.Default.Delete,
@@ -408,21 +379,6 @@ fun DobavitSobitie(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        // отступ между полями
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // поле для ввода телефона участника
-                        OutlinedTextField(
-                            value = participant.phone,
-                            onValueChange = { newPhone ->
-                                participants[index] = participant.copy(phone = newPhone)
-                            },
-                            label = { Text("Номер телефона") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // отступ между полями
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // поле для ввода дополнительной суммы
@@ -436,7 +392,6 @@ fun DobavitSobitie(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        // отступ перед расчетом суммы
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // показывает расчет доли участника
@@ -463,36 +418,24 @@ fun DobavitSobitie(
                         it.extraAmount.toDoubleOrNull() ?: 0.0
                     }
 
-                    // блок с итоговыми расчетами
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // заголовок итогового блока
                         Text(
                             text = "Итого",
                             style = MaterialTheme.typography.titleMedium
                         )
-
-                        // отступ после заголовка
                         Spacer(modifier = Modifier.height(4.dp))
-
-                        // показывает общую сумму
                         Text(
                             text = "Общая сумма: ${"%.2f".format(total)} ₽",
                             style = MaterialTheme.typography.bodyMedium
                         )
-
-                        // показывает равную долю на участника
                         Text(
                             text = "На каждого поровну: ${"%.2f".format(equalShare)} ₽",
                             style = MaterialTheme.typography.bodyMedium
                         )
-
-                        // показывает сумму всех доплат
                         Text(
                             text = "Сумма доплат: ${"%.2f".format(extraSum)} ₽",
                             style = MaterialTheme.typography.bodyMedium
                         )
-
-                        // показывает количество участников
                         Text(
                             text = "Участников: ${participants.size}",
                             style = MaterialTheme.typography.bodyMedium
@@ -502,7 +445,6 @@ fun DobavitSobitie(
             }
         }
 
-        // отступ перед кнопками внизу
         Spacer(modifier = Modifier.height(12.dp))
 
         // нижняя строка с действиями
@@ -510,7 +452,6 @@ fun DobavitSobitie(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // кнопка возвращает назад без создания события
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f)
@@ -518,10 +459,11 @@ fun DobavitSobitie(
                 Text("Назад")
             }
 
-            // кнопка создает новое событие
+            // кнопка создает новое событие с названием
             Button(
                 onClick = {
                     val sobitie = Sobitie(
+                        name = eventName,
                         date = selectedDate,
                         totalAmount = total,
                         participants = participants.toList()
