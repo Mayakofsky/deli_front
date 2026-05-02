@@ -103,6 +103,7 @@ fun DobavitDolshnika(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
 
+        // показывает диалог выбора даты дедлайна
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -127,6 +128,7 @@ fun DobavitDolshnika(
     }
 
     if (showFriendsDialog) {
+        // показывает диалог выбора должника из друзей
         AlertDialog(
             onDismissRequest = { showFriendsDialog = false },
             title = { Text("Выбрать из друзей") },
@@ -158,6 +160,7 @@ fun DobavitDolshnika(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    // контейнер для фото или иконки друга
                                     Surface(
                                         modifier = Modifier
                                             .size(40.dp)
@@ -181,6 +184,7 @@ fun DobavitDolshnika(
                                             }
                                         }
                                     }
+
                                     // показывает только имя друга
                                     Text(
                                         text = "${friend.user.firstName} ${friend.user.lastName}",
@@ -273,7 +277,7 @@ fun DobavitDolshnika(
                 label = { Text("Сумма долга") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                suffix = { Text("₽") },
+                suffix = { Text("руб") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -304,7 +308,7 @@ fun DobavitDolshnika(
                 if (photoUri != null) {
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Фото выбрано ✓",
+                        text = "Фото выбрано",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -312,6 +316,7 @@ fun DobavitDolshnika(
             }
 
             if (photoUri != null) {
+                // показывает превью выбранного фото
                 Image(
                     painter = rememberAsyncImagePainter(photoUri),
                     contentDescription = "Фото",

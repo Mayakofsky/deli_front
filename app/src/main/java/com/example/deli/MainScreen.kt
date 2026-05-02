@@ -49,25 +49,29 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // читает SharedPreferences для определения первого запуска
     val prefs = remember {
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     }
 
+    // true если приложение запускается впервые
     var isFirstLaunch by remember {
         mutableStateOf(prefs.getBoolean("is_first_launch", true))
     }
 
+    // управляет видимостью элементов для анимации
     var visible by remember { mutableStateOf(false) }
 
+    // анимирует масштаб от 0.5 до 1.0
     val scale by animateFloatAsState(
         targetValue = if (visible) 1f else 0.5f,
         animationSpec = tween(1000),
         label = "scale"
     )
 
+    // запускает анимацию и автопереход если не первый запуск
     LaunchedEffect(Unit) {
         visible = true
-
         if (!isFirstLaunch) {
             delay(2000)
             visible = false
@@ -76,18 +80,11 @@ fun MainScreen(
         }
     }
 
+    // выбирает цвета фона в зависимости от темы
     val gradientColors = if (isDarkTheme) {
-        listOf(
-            Color(0xFF1C1B1F),
-            Color(0xFF2B2930),
-            Color(0xFF1C1B1F)
-        )
+        listOf(Color(0xFF1C1B1F), Color(0xFF2B2930), Color(0xFF1C1B1F))
     } else {
-        listOf(
-            Color(0xFFFFFFFF),
-            Color(0xFFF5F5F5),
-            Color(0xFFE0E0E0)
-        )
+        listOf(Color(0xFFFFFFFF), Color(0xFFF5F5F5), Color(0xFFE0E0E0))
     }
 
     val textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF333333)
@@ -130,7 +127,7 @@ fun MainScreen(
                 )
             }
 
-            // создает отступ между заголовком и подзаголовком
+            // отступ между заголовком и подзаголовком
             Spacer(modifier = Modifier.height(16.dp))
 
             // плавно показывает и скрывает подзаголовок
@@ -149,7 +146,7 @@ fun MainScreen(
                 )
             }
 
-            // создает отступ перед кнопкой
+            // отступ перед кнопкой
             Spacer(modifier = Modifier.height(48.dp))
 
             if (isFirstLaunch) {
@@ -159,16 +156,14 @@ fun MainScreen(
                     enter = fadeIn(animationSpec = tween(2500)),
                     exit = fadeOut(animationSpec = tween(500))
                 ) {
-                    // кнопка сохраняет первый запуск и выполняет переход дальше
+                    // кнопка сохраняет первый запуск и выполняет переход
                     Button(
                         onClick = {
                             prefs.edit()
                                 .putBoolean("is_first_launch", false)
                                 .apply()
-
                             isFirstLaunch = false
                             visible = false
-
                             scope.launch {
                                 delay(500)
                                 onNavigate()

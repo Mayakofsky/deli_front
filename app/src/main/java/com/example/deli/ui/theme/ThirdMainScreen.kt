@@ -105,7 +105,13 @@ fun ThirdMainScreen(
         AlertDialog(
             onDismissRequest = { sobitieToDelete = null },
             title = { Text("Удаление") },
-            text = { Text("Удалить событие \"${sobitieToDelete!!.name.ifBlank { sobitieToDelete!!.date }}\"?") },
+            text = {
+                Text(
+                    "Удалить событие \"${
+                        sobitieToDelete!!.name.ifBlank { sobitieToDelete!!.date }
+                    }\"?"
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteSobitie(sobitieToDelete!!)
@@ -338,6 +344,7 @@ fun SobitieCard(
         sobitie.totalAmount / sobitie.participants.size
     } else 0.0
 
+    // карточка с информацией о событии
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -378,7 +385,7 @@ fun SobitieCard(
 
                 // показывает общую сумму события
                 Text(
-                    text = "${"%.0f".format(sobitie.totalAmount)} ₽",
+                    text = "${"%.0f".format(sobitie.totalAmount)} руб",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -389,7 +396,7 @@ fun SobitieCard(
 
             // показывает среднюю сумму на одного участника
             Text(
-                text = "На каждого: ${"%.2f".format(equalShare)} ₽",
+                text = "На каждого: ${"%.2f".format(equalShare)} руб",
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -423,6 +430,7 @@ fun DolzhnikCard(
     onDelete: () -> Unit,
     onPay: () -> Unit
 ) {
+    // карточка с информацией о должнике
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -484,7 +492,8 @@ fun DolzhnikCard(
                                 MaterialTheme.typography.bodyMedium
                             else
                                 MaterialTheme.typography.titleMedium,
-                            fontWeight = if (dolzhnik.title.isBlank()) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (dolzhnik.title.isBlank())
+                                FontWeight.Bold else FontWeight.Normal,
                             color = if (dolzhnik.title.isNotBlank())
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             else
@@ -504,7 +513,7 @@ fun DolzhnikCard(
 
                 // показывает сумму долга
                 Text(
-                    text = "${dolzhnik.amount} ₽",
+                    text = "${dolzhnik.amount} руб",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

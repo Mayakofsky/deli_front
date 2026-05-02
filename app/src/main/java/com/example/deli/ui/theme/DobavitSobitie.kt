@@ -166,6 +166,7 @@ fun DobavitSobitie(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    // контейнер для фото или иконки друга
                                     Surface(
                                         modifier = Modifier
                                             .size(40.dp)
@@ -189,6 +190,7 @@ fun DobavitSobitie(
                                             }
                                         }
                                     }
+
                                     // показывает только имя друга
                                     Text(
                                         text = "${friend.user.firstName} ${friend.user.lastName}",
@@ -264,6 +266,7 @@ fun DobavitSobitie(
                     onValueChange = { totalAmount = it },
                     label = { Text("Общая сумма") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    suffix = { Text("руб") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -281,7 +284,7 @@ fun DobavitSobitie(
                     if (photoUri != null) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Фото выбрано ✓",
+                            text = "Фото выбрано",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -291,6 +294,7 @@ fun DobavitSobitie(
 
             if (photoUri != null) {
                 item {
+                    // показывает превью выбранного изображения
                     Image(
                         painter = rememberAsyncImagePainter(photoUri),
                         contentDescription = "Фото",
@@ -324,6 +328,7 @@ fun DobavitSobitie(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
+
                         // кнопка добавляет пустого участника вручную
                         IconButton(onClick = { participants.add(Participant()) }) {
                             Icon(
@@ -353,12 +358,14 @@ fun DobavitSobitie(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // показывает номер участника
                             Text(
                                 text = "Участник ${index + 1}",
                                 style = MaterialTheme.typography.titleSmall
                             )
 
                             if (participants.size > 1) {
+                                // кнопка удаляет участника из списка
                                 IconButton(onClick = { participants.removeAt(index) }) {
                                     Icon(
                                         Icons.Default.Delete,
@@ -396,8 +403,8 @@ fun DobavitSobitie(
 
                         // показывает расчет доли участника
                         Text(
-                            text = "Доля: ${"%.2f".format(equalShare)} ₽" +
-                                    if (extra > 0) " + ${"%.2f".format(extra)} ₽ = ${"%.2f".format(personalTotal)} ₽"
+                            text = "Доля: ${"%.2f".format(equalShare)} руб" +
+                                    if (extra > 0) " + ${"%.2f".format(extra)} руб = ${"%.2f".format(personalTotal)} руб"
                                     else "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -425,15 +432,15 @@ fun DobavitSobitie(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Общая сумма: ${"%.2f".format(total)} ₽",
+                            text = "Общая сумма: ${"%.2f".format(total)} руб",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "На каждого поровну: ${"%.2f".format(equalShare)} ₽",
+                            text = "На каждого поровну: ${"%.2f".format(equalShare)} руб",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Сумма доплат: ${"%.2f".format(extraSum)} ₽",
+                            text = "Сумма доплат: ${"%.2f".format(extraSum)} руб",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(

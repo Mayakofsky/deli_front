@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,10 +64,10 @@ fun Profile(
     // управляет режимом редактирования профиля
     var isEditing by remember { mutableStateOf(false) }
 
-    // хранит временное имя пользователя при редактировании
+    // хранит временное имя при редактировании
     var editedName by remember { mutableStateOf(userName) }
 
-    // хранит временное фото пользователя при редактировании
+    // хранит временное фото при редактировании
     var editedPhotoUri by remember { mutableStateOf(userPhotoUri) }
 
     // открывает галерею для выбора фото профиля
@@ -76,10 +77,11 @@ fun Profile(
         uri?.let { editedPhotoUri = it.toString() }
     }
 
-    // основной вертикальный контейнер экрана
+    // основной вертикальный контейнер экрана с отступом от шапки
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(innerPadding)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
@@ -97,7 +99,6 @@ fun Profile(
                         .size(96.dp)
                         .clip(CircleShape)
                         .then(
-                            // делает аватар кликабельным в режиме редактирования
                             if (isEditing) Modifier.clickable {
                                 photoLauncher.launch("image/*")
                             } else Modifier
@@ -175,7 +176,6 @@ fun Profile(
 
                 // кнопка переключает в режим редактирования
                 IconButton(onClick = { isEditing = true }) {
-                    // иконка карандаша для редактирования
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = "Редактировать",
@@ -186,10 +186,9 @@ fun Profile(
         }
 
         if (isEditing) {
-            // отступ перед кнопками сохранения
             Spacer(modifier = Modifier.height(12.dp))
 
-            // строка с кнопками отмены и сохранения
+            // строка с кнопками сохранения и отмены
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -203,7 +202,6 @@ fun Profile(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    // текст кнопки отмены
                     Text("Отмена")
                 }
 
@@ -215,19 +213,13 @@ fun Profile(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    // иконка галочки на кнопке сохранения
                     Icon(Icons.Default.Check, contentDescription = null)
-
-                    // отступ между иконкой и текстом
                     Spacer(modifier = Modifier.size(8.dp))
-
-                    // текст кнопки сохранения
                     Text("Сохранить")
                 }
             }
         }
 
-        // отступ перед статистикой
         Spacer(modifier = Modifier.height(20.dp))
 
         // строка с карточками статистики
@@ -250,7 +242,6 @@ fun Profile(
             )
         }
 
-        // отступ перед суммой долгов
         Spacer(modifier = Modifier.height(12.dp))
 
         // считает общую сумму всех долгов
@@ -264,7 +255,6 @@ fun Profile(
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            // вертикально размещает подпись и сумму
             Column(modifier = Modifier.padding(16.dp)) {
                 // подпись над суммой
                 Text(
@@ -272,13 +262,11 @@ fun Profile(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )
-
-                // отступ между подписью и суммой
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // показывает итоговую сумму долгов
                 Text(
-                    text = "${"%.2f".format(totalDebt)} ₽",
+                    text = "${"%.2f".format(totalDebt)} руб",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -286,7 +274,6 @@ fun Profile(
             }
         }
 
-        // отступ перед настройками
         Spacer(modifier = Modifier.height(16.dp))
 
         // заголовок блока настроек
@@ -296,7 +283,6 @@ fun Profile(
             fontWeight = FontWeight.SemiBold
         )
 
-        // отступ перед карточкой настроек
         Spacer(modifier = Modifier.height(8.dp))
 
         // карточка с переключателем темы
@@ -307,7 +293,6 @@ fun Profile(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             )
         ) {
-            // строка с иконкой, текстом и переключателем
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -315,7 +300,6 @@ fun Profile(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // блок с иконкой и названием настройки
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -371,7 +355,6 @@ fun StatCard(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        // вертикально размещает число и подпись
         Column(
             modifier = Modifier
                 .fillMaxWidth()

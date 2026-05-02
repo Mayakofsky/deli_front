@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
 class MainViewModel : ViewModel() {
 
     // хранит текущее состояние темы
@@ -74,6 +73,7 @@ class MainViewModel : ViewModel() {
 
     // обновляет имя и фото профиля в памяти и сохраняет в datastore
     fun updateProfile(context: Context, name: String, photoUri: String?) {
+
         // обновляет имя в потоке
         _userName.value = name
 
@@ -82,6 +82,7 @@ class MainViewModel : ViewModel() {
 
         viewModelScope.launch {
             context.dataStore.edit { prefs ->
+
                 // сохраняет новое имя
                 prefs[USER_NAME_KEY] = name
 
