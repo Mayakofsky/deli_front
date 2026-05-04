@@ -76,7 +76,6 @@ fun SecondScreen(
             confirmPassword.isNotBlank() &&
             passwordsMatch
 
-    // основной контейнер экрана с отступом от шапки телефона
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,31 +84,25 @@ fun SecondScreen(
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // заголовок экрана, меняется в зависимости от режима
         Text(
             text = if (isRegistration) "Регистрация" else "Вход",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
 
-        // отступ после заголовка
         Spacer(modifier = Modifier.height(4.dp))
 
-        // подзаголовок с пояснением действия
         Text(
             text = if (isRegistration) "Создайте аккаунт" else "Войдите в аккаунт",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // отступ перед переключателем режимов
         Spacer(modifier = Modifier.height(16.dp))
 
-        // переключатель между режимами входа и регистрации
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // кнопка переключает в режим входа
             SegmentedButton(
                 selected = !isRegistration,
                 onClick = {
@@ -121,7 +114,6 @@ fun SecondScreen(
                 Text("Вход")
             }
 
-            // кнопка переключает в режим регистрации
             SegmentedButton(
                 selected = isRegistration,
                 onClick = {
@@ -134,20 +126,15 @@ fun SecondScreen(
             }
         }
 
-        // отступ перед полями формы
         Spacer(modifier = Modifier.height(16.dp))
 
-        // прокручиваемая область с полями ввода
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // поля только для режима регистрации
             if (isRegistration) {
-
-                // поле ввода имени с валидацией
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
@@ -157,7 +144,6 @@ fun SecondScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // поле ввода фамилии с валидацией
                 OutlinedTextField(
                     value = secondName,
                     onValueChange = { secondName = it },
@@ -168,7 +154,6 @@ fun SecondScreen(
                 )
             }
 
-            // поле ввода почты, используется в обоих режимах
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -179,7 +164,6 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // поле ввода пароля, текст скрыт
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -191,10 +175,7 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // поле повтора пароля только для регистрации
             if (isRegistration) {
-
-                // поле подтверждения пароля
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
@@ -206,7 +187,6 @@ fun SecondScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // сообщение что пароли не совпадают
                 if (showError && confirmPassword.isNotBlank() && !passwordsMatch) {
                     Text(
                         text = "Пароли не совпадают",
@@ -216,7 +196,6 @@ fun SecondScreen(
                 }
             }
 
-            // сообщение об ошибке при незаполненных полях
             if (showError && (if (isRegistration) !isRegisterValid else !isLoginValid)) {
                 Text(
                     text = "Заполните все обязательные поля",
@@ -226,27 +205,36 @@ fun SecondScreen(
             }
         }
 
-        // отступ перед кнопкой действия
         Spacer(modifier = Modifier.height(8.dp))
 
-        // кнопка подтверждения с логикой валидации
         Button(
             onClick = {
                 if (isRegistration) {
                     if (isRegisterValid) {
                         showError = false
-                        onThirdMainScreen()
                         scope.launch {
                             try {
-                                val response = RetrofitClient.apiService.addUser(
-                                    fName = firstName,
-                                    lName = secondName,
-                                    url = "",
-                                    num = 100
+                                // 1. Формируем объект запроса
+                                val requestData = UserCreateRequest(
+                                    email = email.trim(),
+                                    password = password,
+                                    first_name = firstName.trim(),
+                                    last_name = secondName.trim(),
+                                    link = null // На самом экране поля ввода ссылки пока нет
                                 )
-                                Log.d("MY_SERVER", "Записали: $firstName, ID: ${response.id}")
+
+                                // 2. Делаем сетевой вызов через Retrofit на бэкенд
+                                val response = RetrofitClient.apiService.registerUser(requestData)
+
+                                // 3. Если бэк успешно сохранил в базу данных, логируем ID
+                                Log.d("MY_SERVER", "Успешная регистрация! Новый ID: ${response.user_id}")
+
+                                // 4. Только теперь переключаем экран
+                                onThirdMainScreen()
+
                             } catch (e: Exception) {
-                                Log.e("MY_SERVER", "Ошибка: ${e.message}")
+                                // Сюда упадет ошибка, если, например, интернет пропал или email уже занят
+                                Log.e("MY_SERVER", "Ошибка при регистрации: ${e.message}")
                             }
                         }
                     } else {
@@ -255,6 +243,7 @@ fun SecondScreen(
                 } else {
                     if (isLoginValid) {
                         showError = false
+                        // Заглушка для входа (логику эндпоинта /login допишем позже)
                         onThirdMainScreen()
                     } else {
                         showError = true
@@ -265,7 +254,6 @@ fun SecondScreen(
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
-            // текст кнопки меняется в зависимости от режима
             Text(
                 text = if (isRegistration) "Зарегистрироваться" else "Войти",
                 style = MaterialTheme.typography.titleMedium
