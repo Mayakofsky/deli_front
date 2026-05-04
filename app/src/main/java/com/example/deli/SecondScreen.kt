@@ -207,6 +207,7 @@ fun SecondScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // кнопка подтверждения с логикой валидации
         Button(
             onClick = {
                 if (isRegistration) {
@@ -214,26 +215,17 @@ fun SecondScreen(
                         showError = false
                         scope.launch {
                             try {
-                                // 1. Формируем объект запроса
                                 val requestData = UserCreateRequest(
                                     email = email.trim(),
                                     password = password,
                                     first_name = firstName.trim(),
                                     last_name = secondName.trim(),
-                                    link = null // На самом экране поля ввода ссылки пока нет
+                                    link = null
                                 )
-
-                                // 2. Делаем сетевой вызов через Retrofit на бэкенд
                                 val response = RetrofitClient.apiService.registerUser(requestData)
-
-                                // 3. Если бэк успешно сохранил в базу данных, логируем ID
                                 Log.d("MY_SERVER", "Успешная регистрация! Новый ID: ${response.user_id}")
-
-                                // 4. Только теперь переключаем экран
                                 onThirdMainScreen()
-
                             } catch (e: Exception) {
-                                // Сюда упадет ошибка, если, например, интернет пропал или email уже занят
                                 Log.e("MY_SERVER", "Ошибка при регистрации: ${e.message}")
                             }
                         }
@@ -243,8 +235,20 @@ fun SecondScreen(
                 } else {
                     if (isLoginValid) {
                         showError = false
-                        // Заглушка для входа (логику эндпоинта /login допишем позже)
-                        onThirdMainScreen()
+                        scope.launch {
+                            try {
+                                val loginRequest = UserLoginRequest(
+                                    email = email.trim(),
+                                    password = password
+                                )
+                                val response = RetrofitClient.apiService.loginUser(loginRequest)
+                                Log.d("MY_SERVER", "Вход успешен! ID пользователя: ${response.user_id}")
+                                onThirdMainScreen()
+                            } catch (e: Exception) {
+                                Log.e("MY_SERVER", "Ошибка входа: Неверная почта или пароль")
+                                showError = true
+                            }
+                        }
                     } else {
                         showError = true
                     }
@@ -261,3 +265,4 @@ fun SecondScreen(
         }
     }
 }
+

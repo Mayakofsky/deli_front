@@ -9,6 +9,9 @@ interface ApiService {
     // Наш эндпоинт на FastAPI
     @POST("register")
     suspend fun registerUser(@Body request: UserCreateRequest): RegisterResponse
+
+    @POST("login")
+    suspend fun loginUser(@Body request: UserLoginRequest): RegisterResponse
 }
 
 object RetrofitClient {

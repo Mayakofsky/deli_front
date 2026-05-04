@@ -9,6 +9,10 @@ data class UserCreateRequest(
     val link: String? = null
 )
 
+data class UserLoginRequest(
+    val email: String,
+    val password: String
+)
 data class RegisterResponse(
     val status: String,
     val user_id: String,
