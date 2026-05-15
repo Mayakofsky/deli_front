@@ -5,76 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
-
 object NotificationScheduler {
-
-    // планирует уведомления за неделю и за день до дедлайна
-    fun scheduleDeadlineNotifications(
-        context: Context,
-        title: String,
-        message: String,
-        deadline: String,
-        baseId: Int
-    ) {
-        // пропускает если дата не указана
-        if (deadline.isBlank()) return
-
-        try {
-            // парсит строку даты в объект Date
-            val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-            val deadlineDate = sdf.parse(deadline) ?: return
-
-            // устанавливает время дедлайна на 10 утра
-            val calendar = Calendar.getInstance().apply {
-                time = deadlineDate
-                set(Calendar.HOUR_OF_DAY, 10)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-            }
-
-            // время дедлайна в миллисекундах
-            val deadlineMillis = calendar.timeInMillis
-
-            // текущее время в миллисекундах
-            val now = System.currentTimeMillis()
-
-            // считает время за неделю до дедлайна
-            val weekBefore = deadlineMillis - 7L * 24 * 60 * 60 * 1000
-
-            // планирует уведомление за неделю если время еще не прошло
-            if (weekBefore > now) {
-                scheduleAlarm(
-                    context = context,
-                    triggerAt = weekBefore,
-                    title = "📅 Через неделю дедлайн",
-                    message = message,
-                    notificationId = baseId + 1
-                )
-            }
-
-            // считает время за день до дедлайна
-            val dayBefore = deadlineMillis - 24L * 60 * 60 * 1000
-
-            // планирует уведомление за день если время еще не прошло
-            if (dayBefore > now) {
-                scheduleAlarm(
-                    context = context,
-                    triggerAt = dayBefore,
-                    title = "⏰ Завтра дедлайн!",
-                    message = message,
-                    notificationId = baseId + 2
-                )
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    // создает системный будильник для отправки уведомления в нужное время
     private fun scheduleAlarm(
         context: Context,
         triggerAt: Long,

@@ -18,3 +18,21 @@ data class RegisterResponse(
     val user_id: String,
     val message: String
 )
+
+data class FriendSendRequest(
+    val user_id: String,
+    val friend_id: String
+)
+
+data class FriendRespondRequest(
+    val user_id: String,
+    val friend_id: String,
+    val action: String
+)
+
+data class FriendUser(
+    val user_id: String,
+    val email: String,
+    val first_name: String,
+    val last_name: String
+)

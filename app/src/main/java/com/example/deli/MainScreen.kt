@@ -162,7 +162,6 @@ fun MainScreen(
                             prefs.edit()
                                 .putBoolean("is_first_launch", false)
                                 .apply()
-                            isFirstLaunch = false
                             visible = false
                             scope.launch {
                                 delay(500)

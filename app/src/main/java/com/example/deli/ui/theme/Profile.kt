@@ -60,6 +60,7 @@ fun Profile(
     userName: String,
     userPhotoUri: String?,
     onUpdateProfile: (String, String?) -> Unit,
+    onLogout: () -> Unit,
 ) {
     // управляет режимом редактирования профиля
     var isEditing by remember { mutableStateOf(false) }
@@ -326,17 +327,34 @@ fun Profile(
             }
         }
 
-        // заполняет оставшееся пространство перед кнопкой назад
+        // заполняет оставшееся пространство перед кнопками
         Spacer(modifier = Modifier.weight(1f))
 
-        // кнопка возвращает на предыдущий экран
-        OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Назад")
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) {
+                Text("Назад")
+            }
+
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) {
+                Text(
+                    "Выйти",
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

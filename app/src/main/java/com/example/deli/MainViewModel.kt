@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +24,15 @@ class MainViewModel : ViewModel() {
 
     // публичный поток имени только для чтения
     val userName: StateFlow<String> = _userName.asStateFlow()
+
+    // хранит id пользователя
+    private val _userId = MutableStateFlow("")
+
+    val userId: StateFlow<String> = _userId.asStateFlow()
+
+    fun setUserId(id: String) {
+        _userId.value = id
+    }
 
     // хранит ссылку на фото пользователя
     private val _userPhotoUri = MutableStateFlow<String?>(null)

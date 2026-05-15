@@ -1,7 +1,6 @@
 package com.example.deli.ui.theme
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,21 +20,19 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -43,6 +40,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,35 +52,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import com.example.deli.FriendSendRequest
+import com.example.deli.FriendUser
+import com.example.deli.RetrofitClient
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FriendsScreen(
     innerPadding: PaddingValues,
-    onBack: () -> Unit,
-    friends: List<FriendRecord>,
-    sentRequests: List<FriendRecord>,
-    incomingRequests: List<FriendRecord>,
-    onSearch: (String) -> List<User>,
-    onSendRequest: (User) -> Unit,
-    onCancelRequest: (User) -> Unit,
-    onAcceptRequest: (User) -> Unit,
-    onDeclineRequest: (User) -> Unit,
-    onRemoveFriend: (User) -> Unit
+    userId: String,
+    onBack: () -> Unit
 ) {
-    // состояние пейджера с четырьмя вкладками
     val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
+    val tabs = listOf("Поиск", "Входящие", "Друзья", "Отправленные")
 
-    // названия вкладок
-    val tabs = listOf("Поиск", "Друзья", "Входящие", "Отправл.")
-
-    // основной контейнер экрана с отступом от шапки
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -90,29 +77,22 @@ fun FriendsScreen(
             .padding(innerPadding)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // верхняя строка с кнопкой назад и заголовком
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // кнопка возвращает на предыдущий экран
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
             }
-
-            Spacer(modifier = Modifier.size(8.dp))
-
-            // заголовок экрана
             Text(
                 text = "Друзья",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // строка вкладок для переключения между разделами
         TabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
@@ -129,192 +109,133 @@ fun FriendsScreen(
                     selected = pagerState.currentPage == index,
                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                     text = {
-                        if (index == 2 && incomingRequests.isNotEmpty()) {
-                            // вкладка входящих заявок со счетчиком
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = title,
-                                    fontWeight = if (pagerState.currentPage == index)
-                                        FontWeight.Bold else FontWeight.Normal,
-                                    maxLines = 1,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Spacer(modifier = Modifier.size(4.dp))
-
-                                // красный кружок с количеством входящих заявок
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(18.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = incomingRequests.size.toString(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onError,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        } else {
-                            Text(
-                                text = title,
-                                fontWeight = if (pagerState.currentPage == index)
-                                    FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                        Text(
+                            text = title,
+                            fontWeight = if (pagerState.currentPage == index)
+                                FontWeight.Bold else FontWeight.Normal
+                        )
                     }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // контейнер с перелистыванием между вкладками
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
             when (page) {
-                0 -> SearchTab(onSearch = onSearch, onSendRequest = onSendRequest)
-                1 -> FriendsTab(friends = friends, onRemoveFriend = onRemoveFriend)
-                2 -> IncomingRequestsTab(
-                    requests = incomingRequests,
-                    onAccept = onAcceptRequest,
-                    onDecline = onDeclineRequest
-                )
-                3 -> SentRequestsTab(
-                    requests = sentRequests,
-                    onCancel = onCancelRequest
-                )
+                0 -> SearchTab(userId = userId)
+                1 -> IncomingTab(userId = userId)
+                2 -> FriendsTab(userId = userId)
+                3 -> SentTab(userId = userId)
             }
         }
     }
 }
 
 @Composable
-fun SearchTab(
-    onSearch: (String) -> List<User>,
-    onSendRequest: (User) -> Unit
-) {
-    // хранит введенный поисковый запрос
+private fun SearchTab(userId: String) {
     var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<FriendUser>>(emptyList()) }
+    var loading by remember { mutableStateOf(false) }
+    var sentIds by remember { mutableStateOf(setOf<String>()) }
+    val scope = rememberCoroutineScope()
 
-    // хранит результаты поиска
-    var results by remember { mutableStateOf<List<User>>(emptyList()) }
-
-    // хранит id пользователей которым уже отправлена заявка
-    val sentToIds = remember { mutableStateListOf<String>() }
-
-    // обновляет результаты при каждом изменении запроса
-    LaunchedEffect(query) {
-        results = onSearch(query)
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-
-        // поле для ввода поискового запроса
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Имя, фамилия или почта") },
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Поиск")
-            },
+            label = { Text("Введите имя или почту") },
             singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        when {
-            query.isBlank() -> {
-                EmptyMessage("Введите имя или почту")
-            }
-            results.isEmpty() -> {
-                EmptyMessage("Никого не найдено")
-            }
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(results) { user ->
-                        val isSent = sentToIds.contains(user.id)
-
-                        UserCard(
-                            user = user,
-                            actionButton = {
-                                if (isSent) {
-                                    // кнопка показывает что заявка уже отправлена
-                                    FilledTonalButton(
-                                        onClick = {},
-                                        enabled = false
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Отправлено",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.size(4.dp))
-                                        Text("Отправлено")
-                                    }
-                                } else {
-                                    // кнопка отправляет заявку в друзья
-                                    FilledTonalButton(onClick = {
-                                        onSendRequest(user)
-                                        sentToIds.add(user.id)
-                                    }) {
-                                        Icon(
-                                            Icons.Default.PersonAdd,
-                                            contentDescription = "Добавить",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.size(4.dp))
-                                        Text("Добавить")
-                                    }
-                                }
-                            }
-                        )
+        Button(
+            onClick = {
+                scope.launch {
+                    loading = true
+                    try {
+                        results = RetrofitClient.apiService.searchUsers(query.trim(), userId)
+                    } catch (_: Exception) {
+                        results = emptyList()
                     }
+                    loading = false
                 }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Найти")
             }
         }
-    }
-}
 
-@Composable
-fun FriendsTab(
-    friends: List<FriendRecord>,
-    onRemoveFriend: (User) -> Unit
-) {
-    if (friends.isEmpty()) {
-        EmptyMessage("У вас пока нет друзей")
-    } else {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(friends) { friend ->
-                UserCard(
-                    user = friend.user,
-                    actionButton = {
-                        // кнопка удаляет пользователя из друзей
-                        FilledTonalIconButton(
-                            onClick = { onRemoveFriend(friend.user) },
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Удалить",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+        if (results.isNotEmpty()) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                items(results) { user ->
+                    RequestCard(
+                        name = "${user.first_name} ${user.last_name}",
+                        subtitle = user.email,
+                        actions = {
+                            if (user.user_id in sentIds) {
+                                Button(
+                                    onClick = {},
+                                    enabled = false
+                                ) {
+                                    Text("Запрос отправлен")
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            try {
+                                                RetrofitClient.apiService.sendFriendRequest(
+                                                    FriendSendRequest(userId, user.user_id)
+                                                )
+                                                sentIds = sentIds + user.user_id
+                                            } catch (_: Exception) {}
+                                        }
+                                    }
+                                ) {
+                                    Text("Добавить")
+                                }
+                            }
                         }
-                    }
+                    )
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (loading) "Поиск..." else "Введите имя для поиска",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -322,42 +243,81 @@ fun FriendsTab(
 }
 
 @Composable
-fun IncomingRequestsTab(
-    requests: List<FriendRecord>,
-    onAccept: (User) -> Unit,
-    onDecline: (User) -> Unit
-) {
-    if (requests.isEmpty()) {
-        EmptyMessage("Нет входящих заявок")
+private fun IncomingTab(userId: String) {
+    val incoming = remember { mutableStateListOf<FriendUser>() }
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            val items = RetrofitClient.apiService.getIncomingRequests(userId)
+            incoming.clear()
+            incoming.addAll(items)
+        } catch (_: Exception) {}
+        loading = false
+    }
+
+    if (loading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (incoming.isEmpty()) {
+        EmptyPlaceholder("Нет входящих запросов")
     } else {
         LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
+            contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            items(requests) { request ->
-                UserCard(
-                    user = request.user,
-                    actionButton = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            // кнопка принимает заявку в друзья
-                            FilledIconButton(
-                                onClick = { onAccept(request.user) }
+            items(incoming.toList()) { user ->
+                RequestCard(
+                    name = "${user.first_name} ${user.last_name}",
+                    subtitle = "хочет добавить вас в друзья",
+                    actions = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            RetrofitClient.apiService.respondFriendRequest(
+                                                com.example.deli.FriendRespondRequest(
+                                                    userId, user.user_id, "accept"
+                                                )
+                                            )
+                                            incoming.remove(user)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
                             ) {
-                                Icon(Icons.Default.Check, contentDescription = "Принять")
-                            }
-
-                            // кнопка отклоняет заявку
-                            FilledTonalIconButton(
-                                onClick = { onDecline(request.user) },
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
                                 )
+                                Spacer(Modifier.size(4.dp))
+                                Text("Принять")
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            RetrofitClient.apiService.respondFriendRequest(
+                                                com.example.deli.FriendRespondRequest(
+                                                    userId, user.user_id, "reject"
+                                                )
+                                            )
+                                            incoming.remove(user)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
                             ) {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Отклонить",
-                                    tint = MaterialTheme.colorScheme.error
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
                                 )
+                                Spacer(Modifier.size(4.dp))
+                                Text("Отклонить")
                             }
                         }
                     }
@@ -368,59 +328,101 @@ fun IncomingRequestsTab(
 }
 
 @Composable
-fun SentRequestsTab(
-    requests: List<FriendRecord>,
-    onCancel: (User) -> Unit
-) {
-    if (requests.isEmpty()) {
-        EmptyMessage("Нет отправленных заявок")
+private fun FriendsTab(userId: String) {
+    val friends = remember { mutableStateListOf<FriendUser>() }
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val items = RetrofitClient.apiService.getFriendsList(userId)
+            friends.clear()
+            friends.addAll(items)
+        } catch (_: Exception) {}
+        loading = false
+    }
+
+    if (loading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (friends.isEmpty()) {
+        EmptyPlaceholder("Нет друзей")
     } else {
         LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
+            contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            items(requests) { request ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        UserCardContent(user = request.user)
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // показывает статус ожидания ответа
-                        Text(
-                            text = "Ожидает ответа",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // кнопка отменяет отправленную заявку
-                        FilledTonalButton(
-                            onClick = { onCancel(request.user) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Отменить заявку")
-                        }
-                    }
-                }
+            items(friends.toList()) { user ->
+                RequestCard(
+                    name = "${user.first_name} ${user.last_name}",
+                    subtitle = user.email,
+                    actions = {}
+                )
             }
         }
     }
 }
 
 @Composable
-fun UserCard(
-    user: User,
-    actionButton: @Composable () -> Unit
+private fun SentTab(userId: String) {
+    val sent = remember { mutableStateListOf<FriendUser>() }
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            val items = RetrofitClient.apiService.getOutgoingRequests(userId)
+            sent.clear()
+            sent.addAll(items)
+        } catch (_: Exception) {}
+        loading = false
+    }
+
+    if (loading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (sent.isEmpty()) {
+        EmptyPlaceholder("Нет отправленных запросов")
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(sent.toList()) { user ->
+                RequestCard(
+                    name = "${user.first_name} ${user.last_name}",
+                    subtitle = "Ожидание",
+                    actions = {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        RetrofitClient.apiService.unsendFriendRequest(
+                                            FriendSendRequest(userId, user.user_id)
+                                        )
+                                        sent.remove(user)
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                        ) {
+                            Text("Отменить", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RequestCard(
+    name: String,
+    subtitle: String?,
+    actions: @Composable () -> Unit
 ) {
-    // карточка пользователя с данными и кнопкой действия
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -428,85 +430,49 @@ fun UserCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            UserCardContent(user = user, modifier = Modifier.weight(1f))
-            actionButton()
-        }
-    }
-}
-
-@Composable
-fun UserCardContent(
-    user: User,
-    modifier: Modifier = Modifier
-) {
-    // строка с аватаром и текстовыми данными
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // контейнер для фото или иконки пользователя
-        Surface(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            if (user.photoUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(user.photoUri),
-                    contentDescription = "Фото",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-        }
-
-        // блок с именем и почтой
-        Column(modifier = Modifier.weight(1f)) {
-            // показывает полное имя пользователя
-            Text(
-                text = "${user.firstName} ${user.lastName}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            // показывает адрес электронной почты
-            Text(
-                text = user.email,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                actions()
+            }
         }
     }
 }
 
-@Composable
-fun EmptyMessage(text: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
