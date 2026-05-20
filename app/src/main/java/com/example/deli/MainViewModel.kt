@@ -1,64 +1,67 @@
 package com.example.deli
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.deli.ui.theme.Dolzhnik
-import com.example.deli.ui.theme.Sobitie
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+
 class MainViewModel : ViewModel() {
 
-    // Состояние списка должников
-    private val _dolzhniki = MutableStateFlow<List<Dolzhnik>>(emptyList())
-    val dolzhniki: StateFlow<List<Dolzhnik>> = _dolzhniki
-
-    // Состояние списка событий
-    private val _sobitiya = MutableStateFlow<List<Sobitie>>(emptyList())
-    val sobitiya: StateFlow<List<Sobitie>> = _sobitiya
-
-    // Состояние темы
     private val _isDarkTheme = MutableStateFlow(false)
-    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
-    // Добавление должника
-    fun addDolzhnik(dolzhnik: Dolzhnik) {
-        _dolzhniki.value = _dolzhniki.value + dolzhnik
-    }
+    private val _userName = MutableStateFlow("Пользователь")
+    val userName: StateFlow<String> = _userName.asStateFlow()
 
-    // Удаление должника
-    fun removeDolzhnik(dolzhnik: Dolzhnik) {
-        _dolzhniki.value = _dolzhniki.value - dolzhnik
-    }
+    private val _userPhotoUri = MutableStateFlow<String?>(null)
+    val userPhotoUri: StateFlow<String?> = _userPhotoUri.asStateFlow()
 
-    // Добавление события
-    fun addSobitie(sobitie: Sobitie) {
-        _sobitiya.value = _sobitiya.value + sobitie
-    }
+    private val DARK_THEME_KEY = booleanPreferencesKey("dark_theme")
+    private val USER_NAME_KEY = stringPreferencesKey("user_name")
+    private val USER_PHOTO_KEY = stringPreferencesKey("user_photo")
 
-    // Удаление события
-    fun removeSobitie(sobitie: Sobitie) {
-        _sobitiya.value = _sobitiya.value - sobitie
-    }
-
-    // Переключение темы в памяти
     fun toggleTheme() {
         _isDarkTheme.value = !_isDarkTheme.value
     }
 
-    // Сохранение темы в DataStore
-    fun saveDarkTheme(context: Context, isDark: Boolean) {
+    fun loadDarkTheme(context: Context) {
         viewModelScope.launch {
-            ThemePreferences.saveDarkTheme(context, isDark)
+            val prefs = context.dataStore.data.first()
+            _isDarkTheme.value = prefs[DARK_THEME_KEY] ?: false
+            _userName.value = prefs[USER_NAME_KEY] ?: "Пользователь"
+            _userPhotoUri.value = prefs[USER_PHOTO_KEY]
         }
     }
 
-    // Загрузка темы из DataStore
-    fun loadDarkTheme(context: Context) {
+    fun saveDarkTheme(context: Context, value: Boolean) {
         viewModelScope.launch {
-            ThemePreferences.isDarkTheme(context).collect { isDark ->
-                _isDarkTheme.value = isDark
+            context.dataStore.edit { prefs ->
+                prefs[DARK_THEME_KEY] = value
+            }
+        }
+    }
+
+    fun updateProfile(context: Context, name: String, photoUri: String?) {
+        _userName.value = name
+        _userPhotoUri.value = photoUri
+
+        viewModelScope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[USER_NAME_KEY] = name
+                if (photoUri != null) {
+                    prefs[USER_PHOTO_KEY] = photoUri
+                } else {
+                    prefs.remove(USER_PHOTO_KEY)
+                }
             }
         }
     }
