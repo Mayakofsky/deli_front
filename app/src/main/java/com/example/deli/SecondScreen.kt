@@ -58,7 +58,7 @@ fun SecondScreen(
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // Заголовок
+        // заголовок экрана, меняется в зависимости от режима (вход/регистрация)
         Text(
             text = if (isRegistration) "Регистрация" else "Вход",
             style = MaterialTheme.typography.headlineSmall,
@@ -67,6 +67,7 @@ fun SecondScreen(
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        // подзаголовок с пояснением действия
         Text(
             text = if (isRegistration) "Создайте аккаунт" else "Войдите в аккаунт",
             style = MaterialTheme.typography.bodyMedium,
@@ -75,10 +76,11 @@ fun SecondScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Material 3 Segmented Button
+        // переключатель между режимами входа и регистрации
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth()
         ) {
+            // кнопка режима "Вход"
             SegmentedButton(
                 selected = !isRegistration,
                 onClick = {
@@ -89,6 +91,7 @@ fun SecondScreen(
             ) {
                 Text("Вход")
             }
+            // кнопка режима "Регистрация"
             SegmentedButton(
                 selected = isRegistration,
                 onClick = {
@@ -103,13 +106,14 @@ fun SecondScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Поля формы (прокрутка)
+        // прокручиваемая область с полями ввода
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // поле ввода имени с валидацией
             OutlinedTextField(
                 value = firstName,
                 onValueChange = { firstName = it },
@@ -119,6 +123,7 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // поле ввода фамилии с валидацией
             OutlinedTextField(
                 value = secondName,
                 onValueChange = { secondName = it },
@@ -128,6 +133,7 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // поле ввода телефона с цифровой клавиатурой
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
@@ -138,7 +144,9 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // дополнительные поля только для регистрации
             if (isRegistration) {
+                // поле ввода email с соответствующей клавиатурой
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -149,6 +157,7 @@ fun SecondScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // необязательное поле для ссылки на перевод
                 OutlinedTextField(
                     value = link,
                     onValueChange = { link = it },
@@ -159,6 +168,7 @@ fun SecondScreen(
                 )
             }
 
+            // сообщение об ошибке при незаполненных полях
             if (showError) {
                 Text(
                     text = "Заполните все обязательные поля",
@@ -170,6 +180,7 @@ fun SecondScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // основная кнопка подтверждения с логикой валидации и отправки данных
         Button(
             onClick = {
                 if (isRegistration) {
