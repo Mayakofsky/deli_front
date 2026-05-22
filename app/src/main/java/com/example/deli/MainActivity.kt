@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // второй экран перед переходом в главное меню
+                        // второй экран входа и регистрации
                         composable(
                             route = "screen_2",
                             enterTransition = { fadeIn(animationSpec = tween(800)) }
@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
                                     dolzhniki.remove(dolzhnik)
                                 },
 
-                                // отмечает событие как оплаченноe и убирает уведомления
+                                // отмечает событие как оплаченное и убирает уведомления
                                 onPaySobitie = { sobitie ->
                                     NotificationScheduler.cancelDeadlineNotifications(
                                         context = context,
@@ -194,17 +194,17 @@ class MainActivity : ComponentActivity() {
                                     val participantsInfo = sobitie.participants.joinToString("\n") { p ->
                                         val extra = p.extraAmount.toDoubleOrNull() ?: 0.0
                                         val total = equalShare + extra
-                                        "• ${p.name}: ${"%.2f".format(total)} ₽"
+                                        "- ${p.name}: ${"%.2f".format(total)} руб"
                                     }
 
                                     // формирует текст уведомления по событию
-                                    val message = """
-                                        Событие от ${sobitie.date}
-                                        Общая сумма: ${"%.2f".format(sobitie.totalAmount)} ₽
-                                        
-                                        Кто сколько должен:
-                                        $participantsInfo
-                                    """.trimIndent()
+                                    val message = buildString {
+                                        if (sobitie.name.isNotBlank()) append("${sobitie.name}\n")
+                                        append("Событие от ${sobitie.date}\n")
+                                        append("Общая сумма: ${"%.2f".format(sobitie.totalAmount)} руб\n")
+                                        append("Кто сколько должен:\n")
+                                        append(participantsInfo)
+                                    }
 
                                     // планирует уведомления о дедлайне события
                                     NotificationScheduler.scheduleDeadlineNotifications(
@@ -231,10 +231,11 @@ class MainActivity : ComponentActivity() {
                                     dolzhniki.add(dolzhnik)
 
                                     // формирует текст уведомления по долгу
-                                    val message = """
-                                        ${dolzhnik.name} должен вам ${dolzhnik.amount} ₽
-                                        Дедлайн: ${dolzhnik.deadline}
-                                    """.trimIndent()
+                                    val message = buildString {
+                                        if (dolzhnik.title.isNotBlank()) append("${dolzhnik.title}\n")
+                                        append("${dolzhnik.name} должен вам ${dolzhnik.amount} руб\n")
+                                        append("Дедлайн: ${dolzhnik.deadline}")
+                                    }
 
                                     // планирует уведомления о дедлайне долга
                                     NotificationScheduler.scheduleDeadlineNotifications(
@@ -250,10 +251,7 @@ class MainActivity : ComponentActivity() {
 
                         // экран профиля пользователя
                         composable("screen_6") {
-                            // получает имя пользователя
                             val userName by viewModel.userName.collectAsState()
-
-                            // получает фото пользователя
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
 
                             Profile(

@@ -1,24 +1,40 @@
 package com.example.deli.ui.theme
 
-// Статус заявки
+// статус заявки в друзья
 enum class FriendRequestStatus {
-    PENDING,    // ожидает ответа
-    ACCEPTED,   // принята (друг)
-    SENT        // отправлена другому пользователю
+    // ожидает ответа
+    PENDING,
+
+    // принята, пользователь в друзьях
+    ACCEPTED,
+
+    // отправлена другому пользователю
+    SENT
 }
 
-// Пользователь для поиска
+// модель пользователя для поиска и системы друзей
 data class User(
+    // уникальный идентификатор
     val id: String,
+
+    // имя пользователя
     val firstName: String,
+
+    // фамилия пользователя
     val lastName: String,
-    val phone: String,
+
+    // адрес электронной почты
     val email: String,
+
+    // ссылка на фото профиля, может быть пустой
     val photoUri: String? = null
 )
 
-// Запись о друге/заявке
+// модель записи о друге или заявке
 data class FriendRecord(
+    // данные пользователя
     val user: User,
+
+    // статус отношений
     val status: FriendRequestStatus
 )

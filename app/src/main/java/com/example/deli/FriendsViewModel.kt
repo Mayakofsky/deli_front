@@ -13,12 +13,12 @@ class FriendsViewModel : ViewModel() {
     // локальная имитация базы всех пользователей
     private val _allUsers = MutableStateFlow(
         listOf(
-            User("1", "Иван", "Петров", "+79111111111", "ivan@mail.ru"),
-            User("2", "Мария", "Сидорова", "+79222222222", "maria@mail.ru"),
-            User("3", "Алексей", "Иванов", "+79333333333", "alex@mail.ru"),
-            User("4", "Ольга", "Кузнецова", "+79444444444", "olga@mail.ru"),
-            User("5", "Дмитрий", "Смирнов", "+79555555555", "dmitry@mail.ru"),
-            User("6", "Анна", "Попова", "+79666666666", "anna@mail.ru"),
+            User("1", "Иван", "Петров", "ivan@mail.ru"),
+            User("2", "Мария", "Сидорова", "maria@mail.ru"),
+            User("3", "Алексей", "Иванов", "alex@mail.ru"),
+            User("4", "Ольга", "Кузнецова", "olga@mail.ru"),
+            User("5", "Дмитрий", "Смирнов", "dmitry@mail.ru"),
+            User("6", "Анна", "Попова", "anna@mail.ru"),
         )
     )
 
@@ -43,7 +43,7 @@ class FriendsViewModel : ViewModel() {
     // публичный поток входящих заявок только для чтения
     val incomingRequests: StateFlow<List<FriendRecord>> = _incomingRequests.asStateFlow()
 
-    // ищет пользователей по имени, фамилии, телефону или email
+    // ищет пользователей по имени, фамилии или почте
     fun searchUsers(query: String): List<User> {
 
         // возвращает пустой список если запрос пустой
@@ -53,10 +53,9 @@ class FriendsViewModel : ViewModel() {
         val lowerQuery = query.lowercase().trim()
 
         return _allUsers.value.filter { user ->
-            // проверяет совпадение по любому из полей пользователя
+            // проверяет совпадение по имени, фамилии или почте
             user.firstName.lowercase().contains(lowerQuery) ||
                     user.lastName.lowercase().contains(lowerQuery) ||
-                    user.phone.contains(lowerQuery) ||
                     user.email.lowercase().contains(lowerQuery) ||
                     "${user.firstName} ${user.lastName}".lowercase().contains(lowerQuery)
         }.filter { user ->

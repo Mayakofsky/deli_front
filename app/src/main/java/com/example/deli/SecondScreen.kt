@@ -179,7 +179,7 @@ fun SecondScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // поле ввода пароля, текст скрыт через PasswordVisualTransformation
+            // поле ввода пароля, текст скрыт
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -194,7 +194,7 @@ fun SecondScreen(
             // поле повтора пароля только для регистрации
             if (isRegistration) {
 
-                // поле подтверждения пароля, показывает ошибку если пароли не совпадают
+                // поле подтверждения пароля
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
@@ -206,7 +206,7 @@ fun SecondScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // сообщение что пароли не совпадают, показывается отдельно от общей ошибки
+                // сообщение что пароли не совпадают
                 if (showError && confirmPassword.isNotBlank() && !passwordsMatch) {
                     Text(
                         text = "Пароли не совпадают",
@@ -216,7 +216,7 @@ fun SecondScreen(
                 }
             }
 
-            // сообщение об ошибке при незаполненных обязательных полях
+            // сообщение об ошибке при незаполненных полях
             if (showError && (if (isRegistration) !isRegisterValid else !isLoginValid)) {
                 Text(
                     text = "Заполните все обязательные поля",
@@ -250,7 +250,6 @@ fun SecondScreen(
                             }
                         }
                     } else {
-                        // показывает ошибки если поля не заполнены или пароли не совпадают
                         showError = true
                     }
                 } else {
@@ -258,7 +257,6 @@ fun SecondScreen(
                         showError = false
                         onThirdMainScreen()
                     } else {
-                        // показывает ошибки если почта или пароль не заполнены
                         showError = true
                     }
                 }
