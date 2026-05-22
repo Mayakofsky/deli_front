@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -71,6 +72,9 @@ fun DobavitDolshnika(
     onBack: () -> Unit,
     onAddDolzhnik: (Dolzhnik) -> Unit
 ) {
+    // хранит название долга
+    var title by remember { mutableStateOf("") }
+
     // хранит введенное имя должника
     var name by remember { mutableStateOf("") }
 
@@ -99,11 +103,8 @@ fun DobavitDolshnika(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState()
 
-        // показывает диалог выбора даты дедлайна
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-
-            // кнопка подтверждает выбранную дату
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
@@ -112,39 +113,27 @@ fun DobavitDolshnika(
                     }
                     showDatePicker = false
                 }) {
-                    // текст кнопки подтверждения
                     Text("OK")
                 }
             },
-
-            // кнопка закрывает календарь без выбора
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    // текст кнопки отмены
                     Text("Отмена")
                 }
             }
         ) {
-            // отображает сам календарь
             DatePicker(state = datePickerState)
         }
     }
 
     if (showFriendsDialog) {
-        // показывает диалог выбора должника из друзей
         AlertDialog(
             onDismissRequest = { showFriendsDialog = false },
-
-            // заголовок диалога
             title = { Text("Выбрать из друзей") },
-
-            // основное содержимое диалога
             text = {
                 if (friends.isEmpty()) {
-                    // сообщение если список друзей пуст
                     Text("У вас пока нет друзей")
                 } else {
-                    // список друзей для выбора
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -162,7 +151,6 @@ fun DobavitDolshnika(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                                 )
                             ) {
-                                // строка с аватаром и данными друга
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -170,7 +158,6 @@ fun DobavitDolshnika(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    // контейнер для фото или иконки друга
                                     Surface(
                                         modifier = Modifier
                                             .size(40.dp)
@@ -178,7 +165,6 @@ fun DobavitDolshnika(
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         if (friend.user.photoUri != null) {
-                                            // показывает фото друга
                                             Image(
                                                 painter = rememberAsyncImagePainter(friend.user.photoUri),
                                                 contentDescription = "Фото",
@@ -186,7 +172,6 @@ fun DobavitDolshnika(
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         } else {
-                                            // показывает иконку если фото нет
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     Icons.Default.Person,
@@ -196,43 +181,30 @@ fun DobavitDolshnika(
                                             }
                                         }
                                     }
-
-                                    // блок с именем и телефоном друга
-                                    Column {
-                                        // показывает имя друга
-                                        Text(
-                                            text = "${friend.user.firstName} ${friend.user.lastName}",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-
-                                        // показывает номер телефона друга
-                                        Text(
-                                            text = friend.user.phone,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    // показывает только имя друга
+                                    Text(
+                                        text = "${friend.user.firstName} ${friend.user.lastName}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
                                 }
                             }
                         }
                     }
                 }
             },
-
-            // кнопка закрывает диалог
             confirmButton = {
                 TextButton(onClick = { showFriendsDialog = false }) {
-                    // текст кнопки закрытия
                     Text("Закрыть")
                 }
             }
         )
     }
 
-    // основной контейнер экрана
+    // основной контейнер экрана с отступом от шапки
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(innerPadding)
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -244,7 +216,6 @@ fun DobavitDolshnika(
             fontWeight = FontWeight.Bold
         )
 
-        // отступ после заголовка
         Spacer(modifier = Modifier.height(4.dp))
 
         // подзаголовок с подсказкой
@@ -254,7 +225,6 @@ fun DobavitDolshnika(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // отступ перед формой
         Spacer(modifier = Modifier.height(16.dp))
 
         // прокручиваемый блок с полями формы
@@ -269,19 +239,23 @@ fun DobavitDolshnika(
                 onClick = { showFriendsDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // иконка группы
                 Icon(
                     Icons.Default.Group,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
-
-                // отступ между иконкой и текстом
                 Spacer(modifier = Modifier.size(8.dp))
-
-                // текст кнопки выбора из друзей
                 Text("Выбрать из друзей")
             }
+
+            // поле для ввода названия долга
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Название долга") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             // поле для ввода имени должника
             OutlinedTextField(
@@ -311,7 +285,6 @@ fun DobavitDolshnika(
                 readOnly = true,
                 singleLine = true,
                 trailingIcon = {
-                    // кнопка открывает календарь
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(Icons.Default.CalendarMonth, contentDescription = "Выбрать дату")
                     }
@@ -324,16 +297,12 @@ fun DobavitDolshnika(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // кнопка открывает галерею
                 FilledTonalButton(onClick = { photoLauncher.launch("image/*") }) {
                     Text("Прикрепить фото")
                 }
 
                 if (photoUri != null) {
-                    // отступ перед сообщением о выбранном фото
                     Spacer(modifier = Modifier.width(12.dp))
-
-                    // показывает что фото успешно выбрано
                     Text(
                         text = "Фото выбрано ✓",
                         style = MaterialTheme.typography.bodyMedium,
@@ -343,7 +312,6 @@ fun DobavitDolshnika(
             }
 
             if (photoUri != null) {
-                // показывает превью выбранного фото
                 Image(
                     painter = rememberAsyncImagePainter(photoUri),
                     contentDescription = "Фото",
@@ -356,7 +324,6 @@ fun DobavitDolshnika(
             }
         }
 
-        // отступ перед кнопками действий
         Spacer(modifier = Modifier.height(12.dp))
 
         // нижняя строка с кнопками действий
@@ -364,7 +331,6 @@ fun DobavitDolshnika(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // кнопка закрывает экран без сохранения
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier
@@ -374,12 +340,13 @@ fun DobavitDolshnika(
                 Text("Отмена")
             }
 
-            // кнопка сохраняет должника и возвращает назад
+            // кнопка сохраняет должника с названием долга
             Button(
                 onClick = {
                     if (name.isNotBlank() && amount.isNotBlank()) {
                         onAddDolzhnik(
                             Dolzhnik(
+                                title = title,
                                 name = name,
                                 amount = amount,
                                 deadline = deadlineText,
