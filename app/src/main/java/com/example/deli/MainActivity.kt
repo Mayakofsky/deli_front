@@ -19,8 +19,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.deli.notifications.NotificationScheduler
 import com.example.deli.ui.theme.DELITheme
+import com.example.deli.ui.theme.DobavitDolshnika
+import com.example.deli.ui.theme.DobavitSobitie
 import com.example.deli.ui.theme.Dolzhnik
 import com.example.deli.ui.theme.FriendsScreen
 import com.example.deli.ui.theme.Profile
@@ -91,46 +92,43 @@ class MainActivity : ComponentActivity() {
                                 innerPadding = innerPadding,
                                 dolzhniki = dolzhniki,
                                 sobitiya = sobitiya,
-                                onDobavitSobitie = { },
-                                onDobavitDolshnika = { },
+                                onDobavitSobitie = { navController.navigate("screen_4") },
+                                onDobavitDolshnika = { navController.navigate("screen_5") },
                                 onProfile = { navController.navigate("screen_6") },
                                 onFriends = { navController.navigate("screen_7") },
 
-                                // удаляет должника и отменяет его уведомления
                                 onDeleteDolzhnik = { dolzhnik ->
-                                    NotificationScheduler.cancelDeadlineNotifications(
-                                        context = context,
-                                        baseId = dolzhnik.hashCode()
-                                    )
                                     dolzhniki.remove(dolzhnik)
                                 },
-
-                                // удаляет событие и отменяет его уведомления
                                 onDeleteSobitie = { sobitie ->
-                                    NotificationScheduler.cancelDeadlineNotifications(
-                                        context = context,
-                                        baseId = sobitie.hashCode()
-                                    )
                                     sobitiya.remove(sobitie)
                                 },
-
-                                // отмечает долг как оплаченный и убирает уведомления
                                 onPayDolzhnik = { dolzhnik ->
-                                    NotificationScheduler.cancelDeadlineNotifications(
-                                        context = context,
-                                        baseId = dolzhnik.hashCode()
-                                    )
                                     dolzhniki.remove(dolzhnik)
                                 },
-
-                                // отмечает событие как оплаченное и убирает уведомления
                                 onPaySobitie = { sobitie ->
-                                    NotificationScheduler.cancelDeadlineNotifications(
-                                        context = context,
-                                        baseId = sobitie.hashCode()
-                                    )
                                     sobitiya.remove(sobitie)
                                 }
+                            )
+                        }
+
+                        // экран добавления нового события
+                        composable("screen_4") {
+                            val userId by viewModel.userId.collectAsState()
+                            DobavitSobitie(
+                                innerPadding = innerPadding,
+                                userId = userId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        // экран добавления нового должника
+                        composable("screen_5") {
+                            val userId by viewModel.userId.collectAsState()
+                            DobavitDolshnika(
+                                innerPadding = innerPadding,
+                                userId = userId,
+                                onBack = { navController.popBackStack() }
                             )
                         }
 
