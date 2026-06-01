@@ -40,7 +40,14 @@ class MainViewModel : ViewModel() {
     // публичный поток фото только для чтения
     val userPhotoUri: StateFlow<String?> = _userPhotoUri.asStateFlow()
 
-    // ключ для сохранения темы в datastore
+    private val _notificationsEnabled = MutableStateFlow(true)
+
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    fun toggleNotifications() {
+        _notificationsEnabled.value = !_notificationsEnabled.value
+    }
+
     private val DARK_THEME_KEY = booleanPreferencesKey("dark_theme")
 
     // ключ для сохранения имени в datastore
@@ -49,7 +56,8 @@ class MainViewModel : ViewModel() {
     // ключ для сохранения фото в datastore
     private val USER_PHOTO_KEY = stringPreferencesKey("user_photo")
 
-    // переключает тему на противоположную
+    private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
+
     fun toggleTheme() {
         _isDarkTheme.value = !_isDarkTheme.value
     }
@@ -67,6 +75,17 @@ class MainViewModel : ViewModel() {
 
             // восстанавливает фото пользователя
             _userPhotoUri.value = prefs[USER_PHOTO_KEY]
+
+            // восстанавливает состояние уведомлений
+            _notificationsEnabled.value = prefs[NOTIFICATIONS_ENABLED_KEY] ?: true
+        }
+    }
+
+    fun saveNotificationsEnabled(context: Context, value: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[NOTIFICATIONS_ENABLED_KEY] = value
+            }
         }
     }
 
