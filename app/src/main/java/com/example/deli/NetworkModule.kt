@@ -107,6 +107,12 @@ interface ApiService {
     @GET("summary/due")
     suspend fun summaryDue(@Query("user_id") userId: String): List<SummaryItem>
 
+    @GET("users/{userId}")
+    suspend fun getUser(@Path("userId") userId: String): UserResponse
+
+    @PATCH("users/{userId}")
+    suspend fun updateUser(@Path("userId") userId: String, @Body request: UserUpdateRequest): OkResponse
+
     @Multipart
     @POST("upload")
     suspend fun uploadPhoto(@Part file: MultipartBody.Part): UploadResponse

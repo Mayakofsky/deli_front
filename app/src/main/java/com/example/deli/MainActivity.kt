@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,13 +38,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        NotificationHelper.createNotificationChannels(this)
+
         setContent {
             val viewModel: MainViewModel = viewModel()
             val context = LocalContext.current
             viewModel.loadDarkTheme(context)
             val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+            val userId by viewModel.userId.collectAsState()
+            val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
             val navController = rememberNavController()
             val refreshTrigger = remember { mutableStateOf(0) }
+
+            LaunchedEffect(userId, notificationsEnabled) {
+                if (userId.isNotEmpty() && notificationsEnabled) {
+                    NotificationWorker.schedule(context, userId)
+                } else {
+                    NotificationWorker.cancel(context)
+                    if (userId.isEmpty()) NotificationPrefs.clearAll(context)
+                }
+            }
 
             DELITheme(darkTheme = isDarkTheme) {
                 Scaffold(
@@ -123,6 +137,7 @@ class MainActivity : ComponentActivity() {
                         composable("screen_6") {
                             val userName by viewModel.userName.collectAsState()
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
+                            val uid by viewModel.userId.collectAsState()
 
                             Profile(
                                 innerPadding = innerPadding,
@@ -132,6 +147,12 @@ class MainActivity : ComponentActivity() {
                                     viewModel.toggleTheme()
                                     viewModel.saveDarkTheme(context, !isDarkTheme)
                                 },
+                                notificationsEnabled = notificationsEnabled,
+                                onToggleNotifications = {
+                                    viewModel.toggleNotifications()
+                                    viewModel.saveNotificationsEnabled(context, !notificationsEnabled)
+                                },
+                                userId = uid,
                                 userName = userName,
                                 userPhotoUri = userPhotoUri,
                                 onUpdateProfile = { name, photo ->
@@ -165,6 +186,7 @@ class MainActivity : ComponentActivity() {
                             EventDetailScreen(
                                 innerPadding = innerPadding,
                                 eventId = eventId,
+                                userId = userId,
                                 refreshKey = refreshTrigger.value,
                                 onBack = { navController.popBackStack() },
                                 onAddPurchase = { eId -> navController.navigate("screen_9/$eId") }

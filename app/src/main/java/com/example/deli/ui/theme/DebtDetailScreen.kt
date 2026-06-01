@@ -1,5 +1,7 @@
 package com.example.deli.ui.theme
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -27,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -56,7 +61,23 @@ fun DebtDetailScreen(
     }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var counterpartyLink by remember { mutableStateOf<String?>(null) }
+    var linkLoading by remember { mutableStateOf(true) }
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(item.counterparty?.user_id) {
+        val cpid = item.counterparty?.user_id
+        if (cpid == null) {
+            linkLoading = false
+            return@LaunchedEffect
+        }
+        try {
+            val user = RetrofitClient.apiService.getUser(cpid)
+            counterpartyLink = user.link
+        } catch (_: Exception) {}
+        linkLoading = false
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding)
@@ -124,6 +145,31 @@ fun DebtDetailScreen(
             }
 
             Spacer(Modifier.height(24.dp))
+
+            if (!linkLoading) {
+                if (counterpartyLink != null) {
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(counterpartyLink))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.ArrowForward, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Оплатить")
+                    }
+                } else {
+                    Text(
+                        text = "Пользователь не прикрепил ссылку для перевода",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
 
             Button(
                 onClick = {

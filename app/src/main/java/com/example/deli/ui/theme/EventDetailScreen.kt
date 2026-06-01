@@ -1,5 +1,7 @@
 package com.example.deli.ui.theme
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -56,6 +59,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,12 +81,16 @@ import com.example.deli.PurchaseResponse
 import com.example.deli.PurchaseUpdateRequest
 import com.example.deli.RetrofitClient
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
 fun EventDetailScreen(
     innerPadding: PaddingValues,
     eventId: String,
+    userId: String,
     refreshKey: Int = 0,
     onBack: () -> Unit,
     onAddPurchase: (String) -> Unit
@@ -100,6 +108,10 @@ fun EventDetailScreen(
     var editingPurchase by remember { mutableStateOf<PurchaseResponse?>(null) }
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
+    val context = LocalContext.current
+    var participantLinks by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
+    var linksLoading by remember { mutableStateOf(false) }
+
     fun loadData() {
         scope.launch {
             try {
@@ -116,6 +128,26 @@ fun EventDetailScreen(
     val buyerIds = purchases.map { it.buyer?.user_id }.toSet()
     val participants = event?.participants?.sortedByDescending { buyerIds.contains(it.user_id) } ?: emptyList()
     val balanceMap = balances.associateBy { it.user_id }
+
+    LaunchedEffect(participantsExpanded, balances) {
+        if (!participantsExpanded) return@LaunchedEffect
+        val creditorIds = balances.filter { it.balance > 0 }.map { it.user_id }
+        if (creditorIds.isEmpty()) return@LaunchedEffect
+        linksLoading = true
+        participantLinks = coroutineScope {
+            creditorIds.map { id ->
+                async {
+                    try {
+                        val user = RetrofitClient.apiService.getUser(id)
+                        id to user.link
+                    } catch (_: Exception) {
+                        id to null
+                    }
+                }
+            }.awaitAll().toMap()
+        }
+        linksLoading = false
+    }
 
     if (showAddParticipantDialog) {
         AddParticipantDialog(
@@ -283,6 +315,32 @@ fun EventDetailScreen(
                                                     color = if (bal.balance > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
+                                                if (bal.balance > 0 && p.user_id != userId) {
+                                                    Spacer(Modifier.width(8.dp))
+                                                    val link = participantLinks[p.user_id]
+                                                    if (link != null) {
+                                                        Button(
+                                                            onClick = {
+                                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                                                                context.startActivity(intent)
+                                                            },
+                                                            modifier = Modifier.height(28.dp),
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                            Spacer(Modifier.width(4.dp))
+                                                            Text("Оплатить", fontSize = 12.sp)
+                                                        }
+                                                    } else if (!linksLoading) {
+                                                        Text(
+                                                            "нет ссылки",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            fontSize = 10.sp
+                                                        )
+                                                    }
+                                                }
                                             }
                                             if (isZeroBalance) {
                                                 Spacer(Modifier.width(4.dp))

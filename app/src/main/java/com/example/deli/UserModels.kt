@@ -161,3 +161,15 @@ data class SummaryItem(
 data class UploadResponse(
     val url: String
 )
+
+data class UserUpdateRequest(
+    val link: String? = null
+)
+
+data class UserResponse(
+    val user_id: String,
+    val email: String? = null,
+    val first_name: String,
+    val last_name: String? = null,
+    val link: String? = null
+)

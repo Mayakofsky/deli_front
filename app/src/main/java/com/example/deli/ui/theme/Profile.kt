@@ -1,10 +1,13 @@
 package com.example.deli.ui.theme
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,12 +37,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +55,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.example.deli.RetrofitClient
+import com.example.deli.UserUpdateRequest
+import kotlinx.coroutines.launch
 
 @Composable
 fun Profile(
@@ -55,11 +67,16 @@ fun Profile(
     onBack: () -> Unit,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
+    notificationsEnabled: Boolean,
+    onToggleNotifications: () -> Unit,
+    userId: String,
     userName: String,
     userPhotoUri: String?,
     onUpdateProfile: (String, String?) -> Unit,
     onLogout: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+
     // управляет режимом редактирования профиля
     var isEditing by remember { mutableStateOf(false) }
 
@@ -69,11 +86,34 @@ fun Profile(
     // хранит временное фото при редактировании
     var editedPhotoUri by remember { mutableStateOf(userPhotoUri) }
 
+    // ссылка для перевода
+    var paymentLink by remember { mutableStateOf("") }
+    var paymentLinkLoading by remember { mutableStateOf(true) }
+    var showLinkDialog by remember { mutableStateOf(false) }
+
+    // загружает ссылку из профиля
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            try {
+                val user = RetrofitClient.apiService.getUser(userId)
+                paymentLink = user.link ?: ""
+            } catch (_: Exception) {}
+            paymentLinkLoading = false
+        }
+    }
+
     // открывает галерею для выбора фото профиля
     val photoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { editedPhotoUri = it.toString() }
+    }
+
+    // запрашивает разрешение на уведомления при включении тогла
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted) onToggleNotifications()
     }
 
     // основной вертикальный контейнер экрана с отступом от шапки
@@ -219,34 +259,81 @@ fun Profile(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
-
+        // поле для ссылки на перевод
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Общая сумма долгов",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Ссылка для перевода",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text(
+                        text = "?",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.clickable { showLinkDialog = true }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = paymentLink,
+                    onValueChange = { paymentLink = it },
+                    placeholder = { Text("https://...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !paymentLinkLoading
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // показывает итоговую сумму долгов
-                Text(
-                    text = "0.00 руб",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                RetrofitClient.apiService.updateUser(
+                                    userId,
+                                    UserUpdateRequest(
+                                        link = paymentLink
+                                    )
+                                )
+                            } catch (_: Exception) {}
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !paymentLinkLoading,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Сохранить ссылку")
+                }
             }
         }
+
+        if (showLinkDialog) {
+            AlertDialog(
+                onDismissRequest = { showLinkDialog = false },
+                title = { Text("Что это?") },
+                text = {
+                    Text("Скопируйте ссылку на перевод из вашего банковского приложения (Сбер, Тинькофф и т.д.) и вставьте её сюда. " +
+                            "Когда кто-то захочет перевести вам деньги, он сможет нажать «Оплатить» и перейти по этой ссылке.")
+                },
+                confirmButton = {
+                    TextButton(onClick = { showLinkDialog = false }) {
+                        Text("Понятно")
+                    }
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -296,6 +383,51 @@ fun Profile(
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = { onToggleTheme() }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // карточка с переключателем уведомлений
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = "Уведомления",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                Switch(
+                    checked = notificationsEnabled,
+                    onCheckedChange = {
+                        onToggleNotifications()
+                        if (!notificationsEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
                 )
             }
         }
