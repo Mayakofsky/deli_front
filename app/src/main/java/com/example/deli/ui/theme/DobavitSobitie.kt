@@ -1,6 +1,5 @@
 package com.example.deli.ui.theme
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
@@ -28,7 +30,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,35 +41,68 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.deli.EventCreateRequest
 import com.example.deli.FriendUser
 import com.example.deli.RetrofitClient
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DobavitSobitie(
     innerPadding: PaddingValues,
     userId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCreated: (String) -> Unit
 ) {
-    val participants = remember { mutableStateListOf<Participant>() }
-    var eventName by remember { mutableStateOf("") }
-    var totalAmount by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    var title by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf<Long?>(null) }
+    val participantUserIds = remember { mutableStateListOf<String>() }
+    val participantNames = remember { mutableStateListOf<String>() }
     var showFriendsDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     val friends = remember { mutableStateListOf<FriendUser>() }
     var friendsLoading by remember { mutableStateOf(false) }
+
+    val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedDate = datePickerState.selectedDateMillis
+                    showDatePicker = false
+                }) { Text("ОК") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Отмена") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     if (showFriendsDialog) {
         LaunchedEffect(showFriendsDialog) {
@@ -91,15 +128,20 @@ fun DobavitSobitie(
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(friends) { user ->
+                            val alreadyAdded = participantUserIds.contains(user.user_id)
                             Card(
                                 onClick = {
-                                    participants.add(Participant(name = "${user.first_name} ${user.last_name}"))
+                                    if (!alreadyAdded) {
+                                        participantUserIds.add(user.user_id)
+                                        participantNames.add("${user.first_name} ${user.last_name}")
+                                    }
                                     showFriendsDialog = false
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                    containerColor = if (alreadyAdded) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainerLow
                                 )
                             ) {
                                 Row(
@@ -116,6 +158,9 @@ fun DobavitSobitie(
                                         }
                                     }
                                     Text("${user.first_name} ${user.last_name}", style = MaterialTheme.typography.bodyLarge)
+                                    if (alreadyAdded) {
+                                        Icon(Icons.Default.Check, contentDescription = "Добавлен", tint = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
                         }
@@ -129,11 +174,7 @@ fun DobavitSobitie(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(innerPadding)
-            .padding(24.dp)
+        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(24.dp)
     ) {
         Text(
             text = "Создание события",
@@ -141,17 +182,13 @@ fun DobavitSobitie(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 OutlinedTextField(
-                    value = eventName,
-                    onValueChange = { eventName = it },
+                    value = title,
+                    onValueChange = { title = it },
                     label = { Text("Название события") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -160,27 +197,17 @@ fun DobavitSobitie(
 
             item {
                 OutlinedTextField(
-                    value = selectedDate,
+                    value = if (selectedDate != null) dateFormat.format(Date(selectedDate!!)) else "",
                     onValueChange = {},
-                    label = { Text("Дата события") },
+                    label = { Text("Дата события (необязательно)") },
                     readOnly = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Add, contentDescription = "Календарь")
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Календарь")
                         }
                     }
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = totalAmount,
-                    onValueChange = { totalAmount = it },
-                    label = { Text("Общая сумма") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -195,62 +222,85 @@ fun DobavitSobitie(
                         IconButton(onClick = { showFriendsDialog = true }) {
                             Icon(Icons.Default.Group, contentDescription = "Из друзей", tint = MaterialTheme.colorScheme.primary)
                         }
-                        IconButton(onClick = { participants.add(Participant()) }) {
+                        IconButton(onClick = {
+                            participantUserIds.add("")
+                            participantNames.add("")
+                        }) {
                             Icon(Icons.Default.Add, contentDescription = "Добавить", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
             }
 
-            itemsIndexed(participants) { index, participant ->
+            itemsIndexed(participantNames) { index, name ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Участник ${index + 1}", style = MaterialTheme.typography.titleSmall)
-                            if (participants.size > 1) {
-                                IconButton(onClick = { participants.removeAt(index) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error)
-                                }
-                            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { participantNames[index] = it },
+                            label = { Text("Участник ${index + 1}") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            participantUserIds.removeAt(index)
+                            participantNames.removeAt(index)
+                        }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = MaterialTheme.colorScheme.error)
                         }
-                        OutlinedTextField(
-                            value = participant.name,
-                            onValueChange = { participants[index] = participant.copy(name = it) },
-                            label = { Text("Имя") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = participant.extraAmount,
-                            onValueChange = { participants[index] = participant.copy(extraAmount = it) },
-                            label = { Text("Доп. сумма (необязательно)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        if (error != null) {
+            Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f).height(52.dp)) {
                 Text("Назад")
             }
-            Button(onClick = { }, modifier = Modifier.weight(1f).height(52.dp)) {
-                Text("Создать")
+            Button(
+                onClick = {
+                    if (title.isBlank()) {
+                        error = "Введите название события"
+                        return@Button
+                    }
+                    loading = true
+                    error = null
+                    scope.launch {
+                        try {
+                            val response = RetrofitClient.apiService.createEvent(
+                                EventCreateRequest(
+                                    creator_id = userId,
+                                    title = title,
+                                    deadline = if (selectedDate != null) SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(selectedDate!!)) else null,
+                                    participant_ids = participantUserIds.filter { it.isNotEmpty() },
+                                    guest_names = participantNames.filterIndexed { index, _ -> participantUserIds[index].isEmpty() }
+                                )
+                            )
+                            onCreated(response.id)
+                        } catch (e: Exception) {
+                            error = "Ошибка: ${e.message}"
+                        }
+                        loading = false
+                    }
+                },
+                modifier = Modifier.weight(1f).height(52.dp),
+                enabled = !loading
+            ) {
+                if (loading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                else Text("Создать")
             }
         }
     }

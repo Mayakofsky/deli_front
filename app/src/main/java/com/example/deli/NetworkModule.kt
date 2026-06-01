@@ -1,14 +1,19 @@
 package com.example.deli
 
+import okhttp3.MultipartBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
-    // Наш эндпоинт на FastAPI
     @POST("register")
     suspend fun registerUser(@Body request: UserCreateRequest): RegisterResponse
 
@@ -38,11 +43,77 @@ interface ApiService {
         @Query("query") query: String,
         @Query("current_user_id") currentUserId: String
     ): List<FriendUser>
+
+    @POST("users/guest")
+    suspend fun createGuest(@Body request: GuestCreateRequest): EventParticipant
+
+    @POST("events")
+    suspend fun createEvent(@Body request: EventCreateRequest): EventResponse
+
+    @GET("events")
+    suspend fun listEvents(@Query("user_id") userId: String): List<EventResponse>
+
+    @GET("events/{eventId}")
+    suspend fun getEvent(@Path("eventId") eventId: String): EventResponse
+
+    @POST("events/{eventId}/participants")
+    suspend fun addParticipant(@Path("eventId") eventId: String, @Body request: ParticipantAddRequest): OkResponse
+
+    @DELETE("events/{eventId}/participants/{userId}")
+    suspend fun removeParticipant(@Path("eventId") eventId: String, @Path("userId") userId: String): OkResponse
+
+    @GET("events/{eventId}/participants")
+    suspend fun listParticipants(@Path("eventId") eventId: String): List<EventParticipant>
+
+    @POST("events/{eventId}/guests")
+    suspend fun addGuest(@Path("eventId") eventId: String, @Body request: GuestCreateRequest): EventParticipant
+
+    @POST("events/{eventId}/purchases")
+    suspend fun addPurchase(@Path("eventId") eventId: String, @Body request: PurchaseCreateRequest): PurchaseResponse
+
+    @GET("events/{eventId}/purchases")
+    suspend fun listPurchases(@Path("eventId") eventId: String): List<PurchaseResponse>
+
+    @DELETE("events/{eventId}/purchases/{purchaseId}")
+    suspend fun deletePurchase(@Path("eventId") eventId: String, @Path("purchaseId") purchaseId: String): OkResponse
+
+    @PATCH("events/{eventId}/purchases/{purchaseId}")
+    suspend fun updatePurchase(@Path("eventId") eventId: String, @Path("purchaseId") purchaseId: String, @Body request: PurchaseUpdateRequest): PurchaseResponse
+
+    @GET("events/{eventId}/balances")
+    suspend fun getBalances(@Path("eventId") eventId: String): List<BalanceItem>
+
+    @GET("events/{eventId}/settlement")
+    suspend fun getSettlement(@Path("eventId") eventId: String): List<SettlementItem>
+
+    @POST("events/{eventId}/close")
+    suspend fun closeEvent(@Path("eventId") eventId: String): OkResponse
+
+    @POST("debts")
+    suspend fun createDebt(@Body request: DebtCreateRequest): DebtResponse
+
+    @GET("debts")
+    suspend fun listDebts(@Query("user_id") userId: String, @Query("status") status: String? = null): List<DebtResponse>
+
+    @PATCH("debts/{debtId}")
+    suspend fun updateDebt(@Path("debtId") debtId: String, @Body request: DebtUpdateRequest): OkResponse
+
+    @DELETE("debts/{debtId}")
+    suspend fun deleteDebt(@Path("debtId") debtId: String): OkResponse
+
+    @GET("summary/owed")
+    suspend fun summaryOwed(@Query("user_id") userId: String): List<SummaryItem>
+
+    @GET("summary/due")
+    suspend fun summaryDue(@Query("user_id") userId: String): List<SummaryItem>
+
+    @Multipart
+    @POST("upload")
+    suspend fun uploadPhoto(@Part file: MultipartBody.Part): UploadResponse
 }
 
 object RetrofitClient {
-    // Твой IP сервера (слэш в конце обязателен!)
-    private const val BASE_URL = "http://195.209.213.48:8000/"
+    const val BASE_URL = "http://195.209.213.48:8000/"
 
     val apiService: ApiService by lazy {
         Retrofit.Builder()

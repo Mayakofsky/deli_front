@@ -55,8 +55,6 @@ fun Profile(
     onBack: () -> Unit,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
-    dolzhniki: List<Dolzhnik>,
-    sobitiya: List<Sobitie>,
     userName: String,
     userPhotoUri: String?,
     onUpdateProfile: (String, String?) -> Unit,
@@ -223,32 +221,8 @@ fun Profile(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // строка с карточками статистики
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // карточка с количеством событий
-            StatCard(
-                value = sobitiya.size.toString(),
-                label = "События",
-                modifier = Modifier.weight(1f)
-            )
-
-            // карточка с количеством должников
-            StatCard(
-                value = dolzhniki.size.toString(),
-                label = "Должники",
-                modifier = Modifier.weight(1f)
-            )
-        }
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        // считает общую сумму всех долгов
-        val totalDebt = dolzhniki.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
-
-        // карточка показывает общую сумму долгов
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -257,7 +231,6 @@ fun Profile(
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // подпись над суммой
                 Text(
                     text = "Общая сумма долгов",
                     style = MaterialTheme.typography.bodyMedium,
@@ -267,7 +240,7 @@ fun Profile(
 
                 // показывает итоговую сумму долгов
                 Text(
-                    text = "${"%.2f".format(totalDebt)} руб",
+                    text = "0.00 руб",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary

@@ -1,7 +1,7 @@
 package com.example.deli.ui.theme
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,31 +16,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,223 +48,250 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import com.example.deli.EventResponse
+import com.example.deli.RetrofitClient
+import com.example.deli.SummaryItem
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThirdMainScreen(
     innerPadding: PaddingValues,
-    dolzhniki: List<Dolzhnik>,
-    sobitiya: List<Sobitie>,
+    userId: String,
+    refreshKey: Int = 0,
     onDobavitSobitie: () -> Unit,
     onDobavitDolshnika: () -> Unit,
     onProfile: () -> Unit,
     onFriends: () -> Unit,
-    onDeleteDolzhnik: (Dolzhnik) -> Unit,
-    onDeleteSobitie: (Sobitie) -> Unit,
-    onPayDolzhnik: (Dolzhnik) -> Unit,
-    onPaySobitie: (Sobitie) -> Unit
+    onEventClick: (String) -> Unit,
+    onDebtClick: (SummaryItem) -> Unit
 ) {
-    var dolzhnikToDelete by remember { mutableStateOf<Dolzhnik?>(null) }
-    var sobitieToDelete by remember { mutableStateOf<Sobitie?>(null) }
-
-    val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
-    val tabs = listOf("События", "Должники")
+    var tabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Мне должны", "Я должен", "События")
 
-    if (dolzhnikToDelete != null) {
-        // показывает диалог подтверждения удаления должника
-        AlertDialog(
-            onDismissRequest = { dolzhnikToDelete = null },
-            title = { Text("Удаление") },
-            text = { Text("Удалить должника \"${dolzhnikToDelete!!.name}\"?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDeleteDolzhnik(dolzhnikToDelete!!)
-                    dolzhnikToDelete = null
-                }) {
-                    Text("Удалить", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { dolzhnikToDelete = null }) {
-                    Text("Отмена")
-                }
-            }
-        )
+    var owedItems by remember { mutableStateOf<List<SummaryItem>>(emptyList()) }
+    var dueItems by remember { mutableStateOf<List<SummaryItem>>(emptyList()) }
+    var events by remember { mutableStateOf<List<EventResponse>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var refreshing by remember { mutableStateOf(false) }
+    var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
+
+    fun loadData() {
+        scope.launch {
+            try {
+                val owed = RetrofitClient.apiService.summaryOwed(userId)
+                val due = RetrofitClient.apiService.summaryDue(userId)
+                val evts = RetrofitClient.apiService.listEvents(userId)
+                owedItems = owed
+                dueItems = due
+                events = evts
+            } catch (_: Exception) {}
+            loading = false
+            refreshing = false
+        }
     }
 
-    if (sobitieToDelete != null) {
-        // показывает диалог подтверждения удаления события
-        AlertDialog(
-            onDismissRequest = { sobitieToDelete = null },
-            title = { Text("Удаление") },
-            text = {
-                Text(
-                    "Удалить событие \"${
-                        sobitieToDelete!!.name.ifBlank { sobitieToDelete!!.date }
-                    }\"?"
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onDeleteSobitie(sobitieToDelete!!)
-                    sobitieToDelete = null
-                }) {
-                    Text("Удалить", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { sobitieToDelete = null }) {
-                    Text("Отмена")
-                }
-            }
-        )
-    }
+    LaunchedEffect(userId, refreshKey) { loadData() }
 
-    // основной вертикальный контейнер экрана с отступом от шапки
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(innerPadding)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // верхняя строка с логотипом и кнопкой профиля
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                // отображает название приложения
-                Text(
-                    text = "DELI",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // кнопка открывает экран профиля
-            IconButton(
-                onClick = onProfile,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Профиль",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Text("DELI", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            IconButton(onClick = onProfile, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Person, contentDescription = "Профиль", tint = MaterialTheme.colorScheme.primary)
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // строка с быстрыми действиями
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            QuickActionCard(
-                title = "Событие",
-                icon = Icons.Default.Receipt,
-                onClick = onDobavitSobitie,
-                modifier = Modifier.weight(1f),
-                isPrimary = false
-            )
-            QuickActionCard(
-                title = "Должник",
-                icon = Icons.Default.PersonAdd,
-                onClick = onDobavitDolshnika,
-                modifier = Modifier.weight(1f),
-                isPrimary = false
-            )
-            QuickActionCard(
-                title = "Друзья",
-                icon = Icons.Default.Group,
-                onClick = onFriends,
-                modifier = Modifier.weight(1f),
-                isPrimary = false
-            )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            QuickActionCard(title = "Событие", icon = Icons.Default.Receipt, onClick = onDobavitSobitie, modifier = Modifier.weight(1f))
+            QuickActionCard(title = "Должник", icon = Icons.Default.PersonAdd, onClick = onDobavitDolshnika, modifier = Modifier.weight(1f))
+            QuickActionCard(title = "Друзья", icon = Icons.Default.Group, onClick = onFriends, modifier = Modifier.weight(1f))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // строка вкладок для переключения между событиями и должниками
         TabRow(
-            selectedTabIndex = pagerState.currentPage,
+            selectedTabIndex = tabIndex,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
                     color = MaterialTheme.colorScheme.primary
                 )
             }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    text = {
-                        Text(
-                            text = title,
-                            fontWeight = if (pagerState.currentPage == index)
-                                FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
+                    selected = tabIndex == index,
+                    onClick = { tabIndex = index },
+                    text = { Text(title, fontWeight = if (tabIndex == index) FontWeight.Bold else FontWeight.Normal) }
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // контейнер с перелистыванием страниц
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            when (page) {
-                0 -> {
-                    if (sobitiya.isEmpty()) {
-                        EmptyPlaceholder("Пока нет событий")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
-                        ) {
-                            items(sobitiya) { sobitie ->
-                                SobitieCard(
-                                    sobitie = sobitie,
-                                    onDelete = { sobitieToDelete = sobitie },
-                                    onPay = { onPaySobitie(sobitie) }
+        if (tabIndex == 2) {
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = { refreshing = true; loadData() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (loading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (events.isEmpty()) {
+                    EmptyPlaceholder("У вас нет событий")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
+                        items(events) { event ->
+                            EventCard(event = event, onClick = { onEventClick(event.id) })
+                        }
+                    }
+                }
+            }
+        } else {
+            val items = if (tabIndex == 0) owedItems else dueItems
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = { refreshing = true; loadData() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (loading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (items.isEmpty()) {
+                    EmptyPlaceholder(if (tabIndex == 0) "Вам никто не должен" else "Вы никому не должны")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
+                        items(items) { item ->
+                            SummaryCard(item = item, isOwed = tabIndex == 0, onEventClick = onEventClick, onDebtClick = onDebtClick)
+                        }
+                    }
+                }
+            }
+        }
+
+        photoPreviewUrl?.let { url ->
+            PhotoViewerDialog(url = url, onDismiss = { photoPreviewUrl = null })
+        }
+    }
+}
+
+@Composable
+fun SummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) -> Unit, onDebtClick: (SummaryItem) -> Unit = {}) {
+    if (item.type == "debt") {
+        DebtSummaryCard(item = item, isOwed = isOwed, onClick = { onDebtClick(item) })
+    } else {
+        EventSummaryCard(item = item, isOwed = isOwed, onEventClick = onEventClick)
+    }
+}
+
+@Composable
+fun DebtSummaryCard(item: SummaryItem, isOwed: Boolean, onClick: () -> Unit) {
+    val person = item.counterparty
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${person?.first_name} ${person?.last_name}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = "${"%.0f".format(item.amount)} руб",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isOwed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+fun EventSummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Событие «${item.event_title}»",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (item.deadline != null) {
+                        Text("До ${item.deadline?.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${"%.0f".format(item.amount)} руб",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isOwed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(24.dp))
+                }
+            }
+
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    HorizontalDivider()
+                    Spacer(Modifier.height(8.dp))
+                    val people = if (isOwed) item.debtors else item.creditors
+                    if (people != null) {
+                        people.forEach { p ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("${p.first_name} ${p.last_name}", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "${"%.0f".format(if (isOwed) kotlin.math.abs(p.balance) else kotlin.math.abs(p.balance))} руб",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }
                     }
-                }
-                1 -> {
-                    if (dolzhniki.isEmpty()) {
-                        EmptyPlaceholder("Пока нет должников")
-                    } else {
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp)
-                        ) {
-                            items(dolzhniki) { dolzhnik ->
-                                DolzhnikCard(
-                                    dolzhnik = dolzhnik,
-                                    onDelete = { dolzhnikToDelete = dolzhnik },
-                                    onPay = { onPayDolzhnik(dolzhnik) }
-                                )
-                            }
-                        }
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { onEventClick(item.event_id ?: "") }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Подробнее")
                     }
                 }
             }
@@ -277,44 +304,55 @@ fun QuickActionCard(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isPrimary: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     Card(
         onClick = onClick,
         modifier = modifier.height(90.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPrimary)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxSize().padding(12.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isPrimary)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSecondaryContainer
-            )
+            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
             Spacer(modifier = Modifier.height(4.dp))
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    }
+}
+
+@Composable
+fun EventCard(event: EventResponse, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (event.deadline != null) {
+                    Text("До ${event.deadline.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(
+                    "Участников: ${event.participants?.size ?: 0}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
-                text = title,
+                text = if (event.status == "active") "Активно" else "Закрыто",
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isPrimary)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSecondaryContainer
+                color = if (event.status == "active") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -322,224 +360,7 @@ fun QuickActionCard(
 
 @Composable
 fun EmptyPlaceholder(text: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun SobitieCard(
-    sobitie: Sobitie,
-    onDelete: () -> Unit,
-    onPay: () -> Unit
-) {
-    val equalShare = if (sobitie.participants.isNotEmpty()) {
-        sobitie.totalAmount / sobitie.participants.size
-    } else 0.0
-
-    // карточка с информацией о событии
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    // показывает название события или дату если название пустое
-                    Text(
-                        text = sobitie.name.ifBlank { sobitie.date.ifBlank { "Без названия" } },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // показывает дату если есть название
-                    if (sobitie.name.isNotBlank() && sobitie.date.isNotBlank()) {
-                        Text(
-                            text = sobitie.date,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    // показывает количество участников
-                    Text(
-                        text = "${sobitie.participants.size} участников",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // показывает общую сумму события
-                Text(
-                    text = "${"%.0f".format(sobitie.totalAmount)} руб",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // показывает среднюю сумму на одного участника
-            Text(
-                text = "На каждого: ${"%.2f".format(equalShare)} руб",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = onPay,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Оплатить")
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Удалить",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DolzhnikCard(
-    dolzhnik: Dolzhnik,
-    onDelete: () -> Unit,
-    onPay: () -> Unit
-) {
-    // карточка с информацией о должнике
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // контейнер для фото или стандартной иконки
-                    Surface(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        if (dolzhnik.photoUri != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(dolzhnik.photoUri),
-                                contentDescription = "Фото",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Column {
-                        // показывает название долга если есть
-                        if (dolzhnik.title.isNotBlank()) {
-                            Text(
-                                text = dolzhnik.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        // отображает имя должника
-                        Text(
-                            text = dolzhnik.name,
-                            style = if (dolzhnik.title.isNotBlank())
-                                MaterialTheme.typography.bodyMedium
-                            else
-                                MaterialTheme.typography.titleMedium,
-                            fontWeight = if (dolzhnik.title.isBlank())
-                                FontWeight.Bold else FontWeight.Normal,
-                            color = if (dolzhnik.title.isNotBlank())
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            else
-                                MaterialTheme.colorScheme.onSurface
-                        )
-
-                        if (dolzhnik.deadline.isNotBlank()) {
-                            // показывает срок возврата долга
-                            Text(
-                                text = "До ${dolzhnik.deadline}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                // показывает сумму долга
-                Text(
-                    text = "${dolzhnik.amount} руб",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = onPay,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Оплатить")
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Удалить",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
