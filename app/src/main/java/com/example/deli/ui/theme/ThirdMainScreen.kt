@@ -34,27 +34,26 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.deli.EventResponse
-import com.example.deli.RetrofitClient
+import com.example.deli.HomeViewModel
 import com.example.deli.SummaryItem
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,33 +68,14 @@ fun ThirdMainScreen(
     onEventClick: (String) -> Unit,
     onDebtClick: (SummaryItem) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
+    val homeViewModel: HomeViewModel = viewModel()
+    val homeState by homeViewModel.uiState.collectAsState()
+
     var tabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Мне должны", "Я должен", "События")
-
-    var owedItems by remember { mutableStateOf<List<SummaryItem>>(emptyList()) }
-    var dueItems by remember { mutableStateOf<List<SummaryItem>>(emptyList()) }
-    var events by remember { mutableStateOf<List<EventResponse>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
-    var refreshing by remember { mutableStateOf(false) }
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
-    fun loadData() {
-        scope.launch {
-            try {
-                val owed = RetrofitClient.apiService.summaryOwed(userId)
-                val due = RetrofitClient.apiService.summaryDue(userId)
-                val evts = RetrofitClient.apiService.listEvents(userId)
-                owedItems = owed
-                dueItems = due
-                events = evts
-            } catch (_: Exception) {}
-            loading = false
-            refreshing = false
-        }
-    }
-
-    LaunchedEffect(userId, refreshKey) { loadData() }
+    LaunchedEffect(userId, refreshKey) { homeViewModel.loadData(userId) }
 
     Column(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(horizontal = 16.dp, vertical = 12.dp)
@@ -121,16 +101,10 @@ fun ThirdMainScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        TabRow(
+        SecondaryTabRow(
             selectedTabIndex = tabIndex,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            contentColor = MaterialTheme.colorScheme.primary
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -145,32 +119,32 @@ fun ThirdMainScreen(
 
         if (tabIndex == 2) {
             PullToRefreshBox(
-                isRefreshing = refreshing,
-                onRefresh = { refreshing = true; loadData() },
+                isRefreshing = homeState.isRefreshing,
+                onRefresh = { homeViewModel.refresh(userId) },
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (loading) {
+                if (homeState.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                } else if (events.isEmpty()) {
+                } else if (homeState.events.isEmpty()) {
                     EmptyPlaceholder("У вас нет событий")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 4.dp)) {
-                        items(events) { event ->
+                        items(homeState.events) { event ->
                             EventCard(event = event, onClick = { onEventClick(event.id) })
                         }
                     }
                 }
             }
         } else {
-            val items = if (tabIndex == 0) owedItems else dueItems
+            val items = if (tabIndex == 0) homeState.owedItems else homeState.dueItems
             PullToRefreshBox(
-                isRefreshing = refreshing,
-                onRefresh = { refreshing = true; loadData() },
+                isRefreshing = homeState.isRefreshing,
+                onRefresh = { homeViewModel.refresh(userId) },
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (loading) {
+                if (homeState.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -255,7 +229,7 @@ fun EventSummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) 
                         fontWeight = FontWeight.Bold
                     )
                     if (item.deadline != null) {
-                        Text("До ${item.deadline?.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("До ${item.deadline.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
