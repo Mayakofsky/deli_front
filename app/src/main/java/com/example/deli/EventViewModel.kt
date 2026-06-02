@@ -101,6 +101,18 @@ class EventViewModel : ViewModel() {
         return eventRepository.getFriendsList(userId)
     }
 
+    suspend fun addParticipantSuspend(eventId: String, userId: String) {
+        eventRepository.addParticipant(eventId, userId)
+    }
+
+    suspend fun addGuestSuspend(eventId: String, name: String) {
+        eventRepository.addGuest(eventId, name)
+    }
+
+    suspend fun updatePurchaseSuspend(eventId: String, purchaseId: String, request: PurchaseUpdateRequest): PurchaseResponse {
+        return eventRepository.updatePurchase(eventId, purchaseId, request)
+    }
+
     fun addGuest(eventId: String, name: String, onDone: () -> Unit) {
         viewModelScope.launch {
             try {
