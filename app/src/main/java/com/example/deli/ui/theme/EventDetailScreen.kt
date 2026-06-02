@@ -470,8 +470,14 @@ fun AddParticipantDialog(
                                 TextButton(
                                     onClick = {
                                         adding = true
-                                        eventViewModel.addParticipant(eventId, f.user_id) {
-                                            onAdded()
+                                        scope.launch {
+                                            try {
+                                                eventViewModel.addParticipantSuspend(eventId, f.user_id)
+                                                onAdded()
+                                            } catch (e: Exception) {
+                                                error = e.message
+                                            }
+                                            adding = false
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
@@ -497,8 +503,14 @@ fun AddParticipantDialog(
                             onClick = {
                                 if (manualName.isBlank()) return@Button
                                 adding = true
-                                eventViewModel.addGuest(eventId, manualName) {
-                                    onAdded()
+                                scope.launch {
+                                    try {
+                                        eventViewModel.addGuestSuspend(eventId, manualName)
+                                        onAdded()
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    }
+                                    adding = false
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -526,6 +538,7 @@ fun EditPurchaseDialog(
     onDismiss: () -> Unit,
     onSaved: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     var editDescription by remember { mutableStateOf(purchase.description) }
     var editAmount by remember { mutableStateOf(purchase.amount.toString()) }
     val editBeneficiaries = remember {
@@ -581,12 +594,16 @@ fun EditPurchaseDialog(
                 onClick = {
                     val amount = editAmount.toDoubleOrNull() ?: return@Button
                     saving = true
-                    eventViewModel.updatePurchase(eventId, purchase.id, PurchaseUpdateRequest(
-                        description = editDescription,
-                        amount = amount,
-                        beneficiary_ids = editBeneficiaries.toList()
-                    )) {
-                        onSaved()
+                    scope.launch {
+                        try {
+                            eventViewModel.updatePurchaseSuspend(eventId, purchase.id, PurchaseUpdateRequest(
+                                description = editDescription,
+                                amount = amount,
+                                beneficiary_ids = editBeneficiaries.toList()
+                            ))
+                            onSaved()
+                        } catch (_: Exception) {}
+                        saving = false
                     }
                 },
                 enabled = !saving && editAmount.toDoubleOrNull() != null
