@@ -128,4 +128,6 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
     }
+
+    fun fullUrl(path: String): String = BASE_URL + path.removePrefix("/")
 }
