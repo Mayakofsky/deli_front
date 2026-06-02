@@ -44,21 +44,19 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.deli.EventCreateRequest
-import com.example.deli.FriendUser
-import com.example.deli.RetrofitClient
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.deli.CreateEventViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,20 +69,22 @@ fun DobavitSobitie(
     onBack: () -> Unit,
     onCreated: (String) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
+    val createEventViewModel: CreateEventViewModel = viewModel()
+    val createState by createEventViewModel.uiState.collectAsState()
+
     var title by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<Long?>(null) }
     val participantUserIds = remember { mutableStateListOf<String>() }
     val participantNames = remember { mutableStateListOf<String>() }
     var showFriendsDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    val friends = remember { mutableStateListOf<FriendUser>() }
-    var friendsLoading by remember { mutableStateOf(false) }
+    var localError by remember { mutableStateOf<String?>(null) }
 
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+
+    LaunchedEffect(createState.createdEventId) {
+        createState.createdEventId?.let { onCreated(it) }
+    }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
@@ -106,28 +106,22 @@ fun DobavitSobitie(
 
     if (showFriendsDialog) {
         LaunchedEffect(showFriendsDialog) {
-            friendsLoading = true
-            try {
-                val items = RetrofitClient.apiService.getFriendsList(userId)
-                friends.clear()
-                friends.addAll(items)
-            } catch (_: Exception) {}
-            friendsLoading = false
+            createEventViewModel.loadFriends(userId)
         }
 
         AlertDialog(
             onDismissRequest = { showFriendsDialog = false },
             title = { Text("Выбрать из друзей") },
             text = {
-                if (friendsLoading) {
+                if (createState.friendsLoading) {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                } else if (friends.isEmpty()) {
+                } else if (createState.friends.isEmpty()) {
                     Text("У вас пока нет друзей")
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(friends) { user ->
+                        items(createState.friends) { user ->
                             val alreadyAdded = participantUserIds.contains(user.user_id)
                             Card(
                                 onClick = {
@@ -173,6 +167,8 @@ fun DobavitSobitie(
         )
     }
 
+    val displayError = localError ?: createState.error
+
     Column(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(24.dp)
     ) {
@@ -197,7 +193,7 @@ fun DobavitSobitie(
 
             item {
                 OutlinedTextField(
-                    value = if (selectedDate != null) dateFormat.format(Date(selectedDate!!)) else "",
+                    value = selectedDate?.let { dateFormat.format(Date(it)) } ?: "",
                     onValueChange = {},
                     label = { Text("Дата события (необязательно)") },
                     readOnly = true,
@@ -260,8 +256,8 @@ fun DobavitSobitie(
             }
         }
 
-        if (error != null) {
-            Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        if (displayError != null) {
+            Text(displayError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -272,34 +268,20 @@ fun DobavitSobitie(
             }
             Button(
                 onClick = {
-                    if (title.isBlank()) {
-                        error = "Введите название события"
-                        return@Button
-                    }
-                    loading = true
-                    error = null
-                    scope.launch {
-                        try {
-                            val response = RetrofitClient.apiService.createEvent(
-                                EventCreateRequest(
-                                    creator_id = userId,
-                                    title = title,
-                                    deadline = if (selectedDate != null) SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(selectedDate!!)) else null,
-                                    participant_ids = participantUserIds.filter { it.isNotEmpty() },
-                                    guest_names = participantNames.filterIndexed { index, _ -> participantUserIds[index].isEmpty() }
-                                )
-                            )
-                            onCreated(response.id)
-                        } catch (e: Exception) {
-                            error = "Ошибка: ${e.message}"
-                        }
-                        loading = false
-                    }
+                    if (title.isBlank()) { localError = "Введите название события"; return@Button }
+                    localError = null
+                    createEventViewModel.createEvent(
+                        creatorId = userId,
+                        title = title,
+                        deadline = selectedDate?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(it)) } ?: "",
+                        participantIds = participantUserIds.filter { it.isNotEmpty() },
+                        guestNames = participantNames.filterIndexed { index, _ -> participantUserIds[index].isEmpty() }
+                    )
                 },
                 modifier = Modifier.weight(1f).height(52.dp),
-                enabled = !loading
+                enabled = !createState.isCreating
             ) {
-                if (loading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                if (createState.isCreating) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 else Text("Создать")
             }
         }
