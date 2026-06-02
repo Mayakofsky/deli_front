@@ -20,9 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -31,10 +31,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,40 +43,32 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.deli.DebtDetailState
+import com.example.deli.DebtViewModel
+import com.example.deli.MainViewModel
 import com.example.deli.RetrofitClient
-import kotlinx.coroutines.launch
 
 @Composable
 fun DebtDetailScreen(
     innerPadding: PaddingValues,
+    mainViewModel: MainViewModel,
     onBack: () -> Unit,
     onDeleted: () -> Unit
 ) {
-    val item = DebtDetailState.debtItem
-    if (item == null) {
+    val selectedDebtItem by mainViewModel.selectedDebtItem.collectAsState()
+    val item = selectedDebtItem ?: run {
         onBack()
         return
     }
 
-    val scope = rememberCoroutineScope()
+    val debtViewModel: DebtViewModel = viewModel()
+    val debtState by debtViewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var counterpartyLink by remember { mutableStateOf<String?>(null) }
-    var linkLoading by remember { mutableStateOf(true) }
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(item.counterparty?.user_id) {
-        val cpid = item.counterparty?.user_id
-        if (cpid == null) {
-            linkLoading = false
-            return@LaunchedEffect
-        }
-        try {
-            val user = RetrofitClient.apiService.getUser(cpid)
-            counterpartyLink = user.link
-        } catch (_: Exception) {}
-        linkLoading = false
+        debtViewModel.loadCounterpartyLink(item.counterparty?.user_id)
     }
 
     Column(
@@ -87,7 +79,7 @@ fun DebtDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
             }
             Spacer(Modifier.width(8.dp))
             Text(
@@ -134,7 +126,7 @@ fun DebtDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     val photoUrl = if (item.photo_url.startsWith("http")) item.photo_url
-                        else RetrofitClient.BASE_URL + item.photo_url.removePrefix("/")
+                        else RetrofitClient.fullUrl(item.photo_url)
                     AsyncImage(
                         model = photoUrl,
                         contentDescription = "Фото",
@@ -146,17 +138,17 @@ fun DebtDetailScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            if (!linkLoading) {
-                if (counterpartyLink != null) {
+            if (!debtState.linkLoading) {
+                if (debtState.counterpartyLink != null) {
                     Button(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(counterpartyLink))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(debtState.counterpartyLink))
                             context.startActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.ArrowForward, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Оплатить")
                     }
@@ -173,12 +165,9 @@ fun DebtDetailScreen(
 
             Button(
                 onClick = {
-                    scope.launch {
-                        try {
-                            item.debt_id?.let { RetrofitClient.apiService.deleteDebt(it) }
-                            onDeleted()
-                            onBack()
-                        } catch (_: Exception) {}
+                    debtViewModel.deleteDebt(item.debt_id) {
+                        onDeleted()
+                        onBack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
