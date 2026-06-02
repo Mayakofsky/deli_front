@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -218,7 +217,7 @@ fun EventDetailScreen(
                     Card(
                         onClick = { participantsExpanded = !participantsExpanded },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -293,7 +292,7 @@ fun EventDetailScreen(
                                                                 context.startActivity(intent)
                                                             },
                                                             modifier = Modifier.height(28.dp),
-                                                            shape = RoundedCornerShape(8.dp),
+                                                            shape = MaterialTheme.shapes.small,
                                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                                                         ) {
                                                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
@@ -362,7 +361,7 @@ fun EventDetailScreen(
 fun PurchaseCard(purchase: PurchaseResponse, onEdit: () -> Unit, onPhotoClick: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -400,7 +399,7 @@ fun PurchaseCard(purchase: PurchaseResponse, onEdit: () -> Unit, onPhotoClick: (
                 Spacer(Modifier.height(8.dp))
                 Box(
                     modifier = Modifier.fillMaxWidth().height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(MaterialTheme.shapes.small),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(

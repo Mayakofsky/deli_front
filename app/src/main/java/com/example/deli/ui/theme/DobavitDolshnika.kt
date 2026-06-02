@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -139,7 +138,7 @@ fun DobavitDolshnika(
                                     showFriendsDialog = false
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = MaterialTheme.shapes.medium,
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                                 )
@@ -243,7 +242,7 @@ fun DobavitDolshnika(
                 AsyncImage(
                     model = photoUri,
                     contentDescription = "Фото чека",
-                    modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.fillMaxWidth().height(150.dp).clip(MaterialTheme.shapes.small),
                     contentScale = ContentScale.Crop
                 )
             }

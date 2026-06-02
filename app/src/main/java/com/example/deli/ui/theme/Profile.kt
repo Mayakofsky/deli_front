@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
@@ -248,9 +247,9 @@ fun Profile(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -285,7 +284,7 @@ fun Profile(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !profileState.paymentLinkLoading,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Сохранить ссылку")
                 }
@@ -321,12 +320,11 @@ fun Profile(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // карточка с переключателем темы
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         ) {
             Row(
@@ -364,12 +362,11 @@ fun Profile(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // карточка с переключателем уведомлений
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         ) {
             Row(

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -142,7 +141,7 @@ fun AddPurchaseScreen(
                             else selectedBeneficiaries.add(p.user_id)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                             else MaterialTheme.colorScheme.surfaceVariant
@@ -194,7 +193,7 @@ fun AddPurchaseScreen(
                 AsyncImage(
                     model = photoUri,
                     contentDescription = "Фото чека",
-                    modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.fillMaxWidth().height(150.dp).clip(MaterialTheme.shapes.small),
                     contentScale = ContentScale.Crop
                 )
             }
