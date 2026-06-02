@@ -163,6 +163,8 @@ data class UploadResponse(
 )
 
 data class UserUpdateRequest(
+    val first_name: String? = null,
+    val last_name: String? = null,
     val link: String? = null
 )
 
