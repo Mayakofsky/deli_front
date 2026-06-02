@@ -43,10 +43,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +56,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import com.example.deli.RetrofitClient
-import com.example.deli.UserUpdateRequest
-import kotlinx.coroutines.launch
+import com.example.deli.ProfileViewModel
 
 @Composable
 fun Profile(
@@ -75,48 +74,46 @@ fun Profile(
     onUpdateProfile: (String, String?) -> Unit,
     onLogout: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
+    val profileViewModel: ProfileViewModel = viewModel()
+    val profileState by profileViewModel.uiState.collectAsState()
 
-    // управляет режимом редактирования профиля
     var isEditing by remember { mutableStateOf(false) }
-
-    // хранит временное имя при редактировании
     var editedName by remember { mutableStateOf(userName) }
-
-    // хранит временное фото при редактировании
     var editedPhotoUri by remember { mutableStateOf(userPhotoUri) }
-
-    // ссылка для перевода
     var paymentLink by remember { mutableStateOf("") }
-    var paymentLinkLoading by remember { mutableStateOf(true) }
     var showLinkDialog by remember { mutableStateOf(false) }
 
-    // загружает ссылку из профиля
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
-            try {
-                val user = RetrofitClient.apiService.getUser(userId)
-                paymentLink = user.link ?: ""
-            } catch (_: Exception) {}
-            paymentLinkLoading = false
+            profileViewModel.loadProfile(userId)
         }
     }
 
-    // открывает галерею для выбора фото профиля
+    LaunchedEffect(profileState) {
+        if (!profileState.paymentLinkLoading) {
+            if (profileState.paymentLink.isNotEmpty() && paymentLink.isEmpty()) {
+                paymentLink = profileState.paymentLink
+            }
+            profileState.serverName?.let { name ->
+                if (name != userName) {
+                    onUpdateProfile(name, userPhotoUri)
+                }
+            }
+        }
+    }
+
     val photoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { editedPhotoUri = it.toString() }
     }
 
-    // запрашивает разрешение на уведомления при включении тогла
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (!granted) onToggleNotifications()
     }
 
-    // основной вертикальный контейнер экрана с отступом от шапки
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -124,7 +121,6 @@ fun Profile(
             .padding(innerPadding)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // блок с аватаром пользователя по центру
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -132,7 +128,6 @@ fun Profile(
             contentAlignment = Alignment.Center
         ) {
             Box {
-                // контейнер для фото профиля
                 Surface(
                     modifier = Modifier
                         .size(96.dp)
@@ -145,7 +140,6 @@ fun Profile(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     if (editedPhotoUri != null) {
-                        // показывает фото пользователя
                         Image(
                             painter = rememberAsyncImagePainter(editedPhotoUri),
                             contentDescription = "Аватар",
@@ -153,7 +147,6 @@ fun Profile(
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
-                        // показывает иконку если фото не выбрано
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Person,
@@ -166,7 +159,6 @@ fun Profile(
                 }
 
                 if (isEditing) {
-                    // кнопка смены фото поверх аватара
                     Surface(
                         modifier = Modifier
                             .size(32.dp)
@@ -176,7 +168,6 @@ fun Profile(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            // иконка карандаша на аватаре
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Изменить фото",
@@ -190,7 +181,6 @@ fun Profile(
         }
 
         if (isEditing) {
-            // поле для редактирования имени пользователя
             OutlinedTextField(
                 value = editedName,
                 onValueChange = { editedName = it },
@@ -199,13 +189,11 @@ fun Profile(
                 modifier = Modifier.fillMaxWidth()
             )
         } else {
-            // строка с именем и кнопкой редактирования
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // показывает имя пользователя
                 Text(
                     text = userName.ifBlank { "Пользователь" },
                     style = MaterialTheme.typography.headlineSmall,
@@ -213,7 +201,6 @@ fun Profile(
                     textAlign = TextAlign.Center
                 )
 
-                // кнопка переключает в режим редактирования
                 IconButton(onClick = { isEditing = true }) {
                     Icon(
                         Icons.Default.Edit,
@@ -227,12 +214,10 @@ fun Profile(
         if (isEditing) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // строка с кнопками сохранения и отмены
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // кнопка сбрасывает изменения и выходит из редактирования
                 OutlinedButton(
                     onClick = {
                         editedName = userName
@@ -244,9 +229,9 @@ fun Profile(
                     Text("Отмена")
                 }
 
-                // кнопка сохраняет новые данные профиля
                 Button(
                     onClick = {
+                        profileViewModel.saveProfileName(userId, editedName)
                         onUpdateProfile(editedName, editedPhotoUri)
                         isEditing = false
                     },
@@ -261,7 +246,6 @@ fun Profile(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // поле для ссылки на перевод
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -292,24 +276,15 @@ fun Profile(
                     placeholder = { Text("https://...") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !paymentLinkLoading
+                    enabled = !profileState.paymentLinkLoading
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = {
-                        scope.launch {
-                            try {
-                                RetrofitClient.apiService.updateUser(
-                                    userId,
-                                    UserUpdateRequest(
-                                        link = paymentLink
-                                    )
-                                )
-                            } catch (_: Exception) {}
-                        }
+                        profileViewModel.savePaymentLink(userId, paymentLink)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !paymentLinkLoading,
+                    enabled = !profileState.paymentLinkLoading,
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Сохранить ссылку")
@@ -460,43 +435,6 @@ fun Profile(
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun StatCard(
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    // карточка показывает одну единицу статистики
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // показывает числовое значение статистики
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-
-            // показывает подпись к числу
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
         }
     }
 }
