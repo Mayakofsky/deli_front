@@ -21,7 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
@@ -40,11 +40,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,14 +53,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.deli.AddPurchaseViewModel
 import com.example.deli.EventParticipant
-import com.example.deli.PurchaseCreateRequest
 import com.example.deli.RetrofitClient
-import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,45 +68,35 @@ fun AddPurchaseScreen(
     onBack: () -> Unit,
     onCreated: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
+    val addPurchaseViewModel: AddPurchaseViewModel = viewModel()
+    val addState by addPurchaseViewModel.uiState.collectAsState()
+
     var description by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     val selectedBeneficiaries = remember { mutableStateListOf<String>() }
-    var participants by remember { mutableStateOf<List<EventParticipant>>(emptyList()) }
-    var loading by remember { mutableStateOf(false) }
-    var uploadingPhoto by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
     var photoUri by remember { mutableStateOf<Uri?>(null) }
-    var photoUrl by remember { mutableStateOf<String?>(null) }
+    var localError by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     val photoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             photoUri = it
-            uploadingPhoto = true
-            scope.launch {
-                try {
-                    val inputStream = context.contentResolver.openInputStream(it)
-                    val bytes = inputStream?.readBytes() ?: return@launch
-                    inputStream.close()
-                    val requestBody = bytes.toRequestBody("image/*".toMediaTypeOrNull())
-                    val part = MultipartBody.Part.createFormData("file", "photo.jpg", requestBody)
-                    val response = RetrofitClient.apiService.uploadPhoto(part)
-                    photoUrl = response.url
-                } catch (e: Exception) {
-                    error = "Ошибка загрузки фото: ${e.message}"
-                }
-                uploadingPhoto = false
-            }
+            addPurchaseViewModel.uploadPhoto(context, it)
         }
     }
 
     LaunchedEffect(eventId) {
-        try {
-            participants = RetrofitClient.apiService.listParticipants(eventId)
-            selectedBeneficiaries.addAll(participants.map { it.user_id }.filter { it != userId })
-        } catch (_: Exception) {}
+        addPurchaseViewModel.loadParticipants(eventId, userId)
+        selectedBeneficiaries.clear()
     }
+
+    LaunchedEffect(addState.participants) {
+        if (selectedBeneficiaries.isEmpty() && addState.participants.isNotEmpty()) {
+            selectedBeneficiaries.addAll(addState.participants.map { it.user_id }.filter { it != userId })
+        }
+    }
+
+    val displayError = localError ?: addState.error
 
     Column(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding)
@@ -119,7 +106,7 @@ fun AddPurchaseScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
             }
             Text("Добавить покупку", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
@@ -147,7 +134,7 @@ fun AddPurchaseScreen(
             Text("Разделить на:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
 
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(participants.filter { it.user_id != userId }) { p ->
+                items(addState.participants.filter { it.user_id != userId }) { p ->
                     val isSelected = selectedBeneficiaries.contains(p.user_id)
                     Card(
                         onClick = {
@@ -185,22 +172,22 @@ fun AddPurchaseScreen(
                 }
             }
 
-            if (error != null) {
-                Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (displayError != null) {
+                Text(displayError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             OutlinedButton(
                 onClick = { photoPickerLauncher.launch("image/*") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !uploadingPhoto
+                enabled = !addState.isUploading
             ) {
-                if (uploadingPhoto) {
+                if (addState.isUploading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                 }
                 Icon(Icons.Default.CameraAlt, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(if (photoUrl != null) "Фото загружено" else "Добавить фото чека")
+                Text(if (addState.photoUrl != null) "Фото загружено" else "Добавить фото чека")
             }
 
             if (photoUri != null) {
@@ -214,32 +201,19 @@ fun AddPurchaseScreen(
 
             Button(
                 onClick = {
-                    if (description.isBlank()) { error = "Введите описание"; return@Button }
-                    if (amount.toDoubleOrNull() == null || amount.toDoubleOrNull()!! <= 0) { error = "Введите сумму"; return@Button }
-                    loading = true; error = null
-                    scope.launch {
-                        try {
-                            RetrofitClient.apiService.addPurchase(
-                                eventId,
-                                PurchaseCreateRequest(
-                                    buyer_id = userId,
-                                    description = description,
-                                    amount = amount.toDouble(),
-                                    receipt_photo_url = photoUrl,
-                                    beneficiary_ids = selectedBeneficiaries.toList()
-                                )
-                            )
-                            onCreated()
-                        } catch (e: Exception) {
-                            error = "Ошибка: ${e.message}"
-                        }
-                        loading = false
-                    }
+                    if (description.isBlank()) { localError = "Введите описание"; return@Button }
+                    val parsedAmount = amount.toDoubleOrNull()
+                    if (parsedAmount == null || parsedAmount <= 0) { localError = "Введите сумму"; return@Button }
+                    localError = null
+                    addPurchaseViewModel.addPurchase(
+                        eventId, userId, description, amount.toDouble(),
+                        addState.photoUrl, selectedBeneficiaries.toList(), onCreated
+                    )
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                enabled = !loading
+                enabled = !addState.isLoading
             ) {
-                if (loading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                if (addState.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 else Text("Добавить")
             }
 
