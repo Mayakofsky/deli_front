@@ -291,7 +291,7 @@ fun EventDetailScreen(
                                                     color = if (bal.balance > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
-                                                if (bal.balance > 0 && p.user_id != userId) {
+                                                if (bal.balance > 0 && p.user_id != userId && isBuyer) {
                                                     Spacer(Modifier.width(8.dp))
                                                     val link = participantLinks[p.user_id]
                                                     if (link != null) {
