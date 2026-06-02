@@ -100,6 +100,16 @@ fun ThirdMainScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        homeState.error?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         SecondaryTabRow(
             selectedTabIndex = tabIndex,
             containerColor = MaterialTheme.colorScheme.surface,

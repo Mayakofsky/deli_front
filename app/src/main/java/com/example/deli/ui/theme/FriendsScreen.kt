@@ -120,6 +120,16 @@ fun FriendsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        friendsState.error?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()

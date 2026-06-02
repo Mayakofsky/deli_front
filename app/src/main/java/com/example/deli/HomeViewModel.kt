@@ -12,7 +12,8 @@ data class HomeUiState(
     val dueItems: List<SummaryItem> = emptyList(),
     val events: List<EventResponse> = emptyList(),
     val isLoading: Boolean = true,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val error: String? = null
 )
 
 class HomeViewModel : ViewModel() {
@@ -24,28 +25,28 @@ class HomeViewModel : ViewModel() {
 
     fun loadData(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val owed = debtRepository.summaryOwed(userId)
                 val due = debtRepository.summaryDue(userId)
                 val evts = eventRepository.listEvents(userId)
-                _uiState.value = HomeUiState(owedItems = owed, dueItems = due, events = evts)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = HomeUiState(owedItems = owed, dueItems = due, events = evts, isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Ошибка загрузки")
             }
         }
     }
 
     fun refresh(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isRefreshing = true)
+            _uiState.value = _uiState.value.copy(isRefreshing = true, error = null)
             try {
                 val owed = debtRepository.summaryOwed(userId)
                 val due = debtRepository.summaryDue(userId)
                 val evts = eventRepository.listEvents(userId)
-                _uiState.value = HomeUiState(owedItems = owed, dueItems = due, events = evts)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isRefreshing = false)
+                _uiState.value = HomeUiState(owedItems = owed, dueItems = due, events = evts, isRefreshing = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isRefreshing = false, error = e.message ?: "Ошибка загрузки")
             }
         }
     }

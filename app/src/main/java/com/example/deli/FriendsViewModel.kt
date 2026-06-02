@@ -17,7 +17,8 @@ data class FriendsUiState(
     val isLoading: Boolean = true,
     val isIncomingLoading: Boolean = true,
     val isFriendsLoading: Boolean = true,
-    val isSentLoading: Boolean = true
+    val isSentLoading: Boolean = true,
+    val error: String? = null
 )
 
 class FriendsViewModel : ViewModel() {
@@ -28,12 +29,12 @@ class FriendsViewModel : ViewModel() {
 
     fun searchUsers(query: String, currentUserId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSearching = true)
+            _uiState.value = _uiState.value.copy(isSearching = true, error = null)
             try {
                 val results = friendRepository.searchUsers(query.trim(), currentUserId)
                 _uiState.value = _uiState.value.copy(searchResults = results, isSearching = false)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(searchResults = emptyList(), isSearching = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(searchResults = emptyList(), isSearching = false, error = e.message ?: "Ошибка поиска")
             }
         }
     }
@@ -43,7 +44,9 @@ class FriendsViewModel : ViewModel() {
             try {
                 friendRepository.sendFriendRequest(userId, friendId)
                 _uiState.value = _uiState.value.copy(sentIds = _uiState.value.sentIds + friendId)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Ошибка отправки запроса")
+            }
         }
     }
 
@@ -52,7 +55,9 @@ class FriendsViewModel : ViewModel() {
             try {
                 friendRepository.respondFriendRequest(userId, friendId, action)
                 loadIncoming(userId)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Ошибка ответа на запрос")
+            }
         }
     }
 
@@ -61,42 +66,44 @@ class FriendsViewModel : ViewModel() {
             try {
                 friendRepository.unsendFriendRequest(userId, friendId)
                 loadSent(userId)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Ошибка отмены запроса")
+            }
         }
     }
 
     fun loadIncoming(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isIncomingLoading = true)
+            _uiState.value = _uiState.value.copy(isIncomingLoading = true, error = null)
             try {
                 val items = friendRepository.getIncomingRequests(userId)
                 _uiState.value = _uiState.value.copy(incoming = items, isIncomingLoading = false)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isIncomingLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isIncomingLoading = false, error = e.message ?: "Ошибка загрузки входящих")
             }
         }
     }
 
     fun loadFriends(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isFriendsLoading = true)
+            _uiState.value = _uiState.value.copy(isFriendsLoading = true, error = null)
             try {
                 val items = friendRepository.getFriendsList(userId)
                 _uiState.value = _uiState.value.copy(friends = items, isFriendsLoading = false)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isFriendsLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isFriendsLoading = false, error = e.message ?: "Ошибка загрузки друзей")
             }
         }
     }
 
     fun loadSent(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSentLoading = true)
+            _uiState.value = _uiState.value.copy(isSentLoading = true, error = null)
             try {
                 val items = friendRepository.getOutgoingRequests(userId)
                 _uiState.value = _uiState.value.copy(sent = items, isSentLoading = false)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isSentLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isSentLoading = false, error = e.message ?: "Ошибка загрузки отправленных")
             }
         }
     }
