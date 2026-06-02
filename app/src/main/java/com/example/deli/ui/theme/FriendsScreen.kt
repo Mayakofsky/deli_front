@@ -20,7 +20,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
@@ -35,16 +35,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,9 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.deli.FriendSendRequest
-import com.example.deli.FriendUser
-import com.example.deli.RetrofitClient
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.deli.FriendsViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -66,9 +63,17 @@ fun FriendsScreen(
     userId: String,
     onBack: () -> Unit
 ) {
+    val friendsViewModel: FriendsViewModel = viewModel()
+    val friendsState by friendsViewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val tabs = listOf("Поиск", "Входящие", "Друзья", "Отправленные")
+
+    LaunchedEffect(Unit) {
+        friendsViewModel.loadIncoming(userId)
+        friendsViewModel.loadFriends(userId)
+        friendsViewModel.loadSent(userId)
+    }
 
     Column(
         modifier = Modifier
@@ -82,7 +87,7 @@ fun FriendsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
             }
             Text(
                 text = "Друзья",
@@ -93,17 +98,11 @@ fun FriendsScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        ScrollableTabRow(
+        SecondaryScrollableTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
-            edgePadding = 0.dp,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            edgePadding = 0.dp
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -127,22 +126,19 @@ fun FriendsScreen(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             when (page) {
-                0 -> SearchTab(userId = userId)
-                1 -> IncomingTab(userId = userId)
-                2 -> FriendsTab(userId = userId)
-                3 -> SentTab(userId = userId)
+                0 -> SearchTab(userId = userId, viewModel = friendsViewModel)
+                1 -> IncomingTab(userId = userId, viewModel = friendsViewModel)
+                2 -> FriendsTab(userId = userId, viewModel = friendsViewModel)
+                3 -> SentTab(userId = userId, viewModel = friendsViewModel)
             }
         }
     }
 }
 
 @Composable
-private fun SearchTab(userId: String) {
+private fun SearchTab(userId: String, viewModel: FriendsViewModel) {
+    val state = viewModel.uiState.collectAsState().value
     var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<FriendUser>>(emptyList()) }
-    var loading by remember { mutableStateOf(false) }
-    var sentIds by remember { mutableStateOf(setOf<String>()) }
-    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -160,22 +156,12 @@ private fun SearchTab(userId: String) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Button(
-            onClick = {
-                scope.launch {
-                    loading = true
-                    try {
-                        results = RetrofitClient.apiService.searchUsers(query.trim(), userId)
-                    } catch (_: Exception) {
-                        results = emptyList()
-                    }
-                    loading = false
-                }
-            },
+            onClick = { viewModel.searchUsers(query, userId) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            if (loading) {
+            if (state.isSearching) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
@@ -186,7 +172,7 @@ private fun SearchTab(userId: String) {
             }
         }
 
-        if (results.isNotEmpty()) {
+        if (state.searchResults.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -194,12 +180,12 @@ private fun SearchTab(userId: String) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
-                items(results) { user ->
+                items(state.searchResults) { user ->
                     RequestCard(
                         name = "${user.first_name} ${user.last_name}",
                         subtitle = user.email,
                         actions = {
-                            if (user.user_id in sentIds) {
+                            if (user.user_id in state.sentIds) {
                                 Button(
                                     onClick = {},
                                     enabled = false
@@ -209,14 +195,7 @@ private fun SearchTab(userId: String) {
                             } else {
                                 Button(
                                     onClick = {
-                                        scope.launch {
-                                            try {
-                                                RetrofitClient.apiService.sendFriendRequest(
-                                                    FriendSendRequest(userId, user.user_id)
-                                                )
-                                                sentIds = sentIds + user.user_id
-                                            } catch (_: Exception) {}
-                                        }
+                                        viewModel.sendFriendRequest(userId, user.user_id)
                                     }
                                 ) {
                                     Text("Добавить")
@@ -234,7 +213,7 @@ private fun SearchTab(userId: String) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (loading) "Поиск..." else "Введите имя для поиска",
+                    text = if (state.isSearching) "Поиск..." else "Введите имя для поиска",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -244,25 +223,14 @@ private fun SearchTab(userId: String) {
 }
 
 @Composable
-private fun IncomingTab(userId: String) {
-    val incoming = remember { mutableStateListOf<FriendUser>() }
-    var loading by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
+private fun IncomingTab(userId: String, viewModel: FriendsViewModel) {
+    val state = viewModel.uiState.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        try {
-            val items = RetrofitClient.apiService.getIncomingRequests(userId)
-            incoming.clear()
-            incoming.addAll(items)
-        } catch (_: Exception) {}
-        loading = false
-    }
-
-    if (loading) {
+    if (state.isIncomingLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    } else if (incoming.isEmpty()) {
+    } else if (state.incoming.isEmpty()) {
         EmptyPlaceholder("Нет входящих запросов")
     } else {
         LazyColumn(
@@ -270,7 +238,7 @@ private fun IncomingTab(userId: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            items(incoming.toList()) { user ->
+            items(state.incoming) { user ->
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = "хочет добавить вас в друзья",
@@ -278,45 +246,19 @@ private fun IncomingTab(userId: String) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
-                                    scope.launch {
-                                        try {
-                                            RetrofitClient.apiService.respondFriendRequest(
-                                                com.example.deli.FriendRespondRequest(
-                                                    userId, user.user_id, "accept"
-                                                )
-                                            )
-                                            incoming.remove(user)
-                                        } catch (_: Exception) {}
-                                    }
+                                    viewModel.respondFriendRequest(userId, user.user_id, "accept")
                                 }
                             ) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.size(4.dp))
                                 Text("Принять")
                             }
                             OutlinedButton(
                                 onClick = {
-                                    scope.launch {
-                                        try {
-                                            RetrofitClient.apiService.respondFriendRequest(
-                                                com.example.deli.FriendRespondRequest(
-                                                    userId, user.user_id, "reject"
-                                                )
-                                            )
-                                            incoming.remove(user)
-                                        } catch (_: Exception) {}
-                                    }
+                                    viewModel.respondFriendRequest(userId, user.user_id, "reject")
                                 }
                             ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.size(4.dp))
                                 Text("Отклонить")
                             }
@@ -329,24 +271,14 @@ private fun IncomingTab(userId: String) {
 }
 
 @Composable
-private fun FriendsTab(userId: String) {
-    val friends = remember { mutableStateListOf<FriendUser>() }
-    var loading by remember { mutableStateOf(true) }
+private fun FriendsTab(userId: String, viewModel: FriendsViewModel) {
+    val state = viewModel.uiState.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        try {
-            val items = RetrofitClient.apiService.getFriendsList(userId)
-            friends.clear()
-            friends.addAll(items)
-        } catch (_: Exception) {}
-        loading = false
-    }
-
-    if (loading) {
+    if (state.isFriendsLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    } else if (friends.isEmpty()) {
+    } else if (state.friends.isEmpty()) {
         EmptyPlaceholder("Нет друзей")
     } else {
         LazyColumn(
@@ -354,7 +286,7 @@ private fun FriendsTab(userId: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            items(friends.toList()) { user ->
+            items(state.friends) { user ->
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = user.email,
@@ -366,25 +298,14 @@ private fun FriendsTab(userId: String) {
 }
 
 @Composable
-private fun SentTab(userId: String) {
-    val sent = remember { mutableStateListOf<FriendUser>() }
-    var loading by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
+private fun SentTab(userId: String, viewModel: FriendsViewModel) {
+    val state = viewModel.uiState.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        try {
-            val items = RetrofitClient.apiService.getOutgoingRequests(userId)
-            sent.clear()
-            sent.addAll(items)
-        } catch (_: Exception) {}
-        loading = false
-    }
-
-    if (loading) {
+    if (state.isSentLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    } else if (sent.isEmpty()) {
+    } else if (state.sent.isEmpty()) {
         EmptyPlaceholder("Нет отправленных запросов")
     } else {
         LazyColumn(
@@ -392,21 +313,14 @@ private fun SentTab(userId: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
-            items(sent.toList()) { user ->
+            items(state.sent) { user ->
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = "Ожидание",
                     actions = {
                         TextButton(
                             onClick = {
-                                scope.launch {
-                                    try {
-                                        RetrofitClient.apiService.unsendFriendRequest(
-                                            FriendSendRequest(userId, user.user_id)
-                                        )
-                                        sent.remove(user)
-                                    } catch (_: Exception) {}
-                                }
+                                viewModel.unsendFriendRequest(userId, user.user_id)
                             }
                         ) {
                             Text("Отменить", color = MaterialTheme.colorScheme.error)
