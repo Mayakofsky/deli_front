@@ -13,6 +13,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 class MainViewModel : ViewModel() {
 
+    private val _selectedDebtItem = MutableStateFlow<SummaryItem?>(null)
+    val selectedDebtItem: StateFlow<SummaryItem?> = _selectedDebtItem.asStateFlow()
+
+    fun setSelectedDebtItem(item: SummaryItem?) {
+        _selectedDebtItem.value = item
+    }
+
     // хранит текущее состояние темы
     private val _isDarkTheme = MutableStateFlow(false)
 
