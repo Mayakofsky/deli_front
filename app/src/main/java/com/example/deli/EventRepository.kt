@@ -1,14 +1,47 @@
 package com.example.deli
 
+import com.example.deli.data.CacheHelper
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
 class EventRepository {
     private val api = RetrofitClient.apiService
+    private val gson = Gson()
 
     suspend fun listEvents(userId: String): List<EventResponse> {
-        return api.listEvents(userId)
+        return try {
+            val data = api.listEvents(userId)
+            try {
+                val json = data.map { gson.toJson(it) }
+                CacheHelper.saveEvents(json, userId)
+            } catch (_: Exception) {}
+            data
+        } catch (e: Exception) {
+            if (CacheHelper.isInitialized()) {
+                val cached = CacheHelper.getEvents(userId)
+                if (cached.isNotEmpty()) {
+                    return cached.map { gson.fromJson(it, EventResponse::class.java) }
+                }
+            }
+            throw e
+        }
     }
 
     suspend fun getEvent(eventId: String): EventResponse {
-        return api.getEvent(eventId)
+        return try {
+            val data = api.getEvent(eventId)
+            try {
+                val json = gson.toJson(data)
+                CacheHelper.saveEvents(listOf(json), data.creator_id)
+            } catch (_: Exception) {}
+            data
+        } catch (e: Exception) {
+            if (CacheHelper.isInitialized()) {
+                val cached = CacheHelper.getEvent(eventId)
+                if (cached != null) return gson.fromJson(cached, EventResponse::class.java)
+            }
+            throw e
+        }
     }
 
     suspend fun createEvent(creatorId: String, title: String, deadline: String? = null, participantIds: List<String> = emptyList(), guestNames: List<String> = emptyList()): EventResponse {

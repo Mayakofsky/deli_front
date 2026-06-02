@@ -1,14 +1,30 @@
 package com.example.deli
 
+import com.example.deli.data.CacheHelper
+import com.google.gson.Gson
+
 class DebtRepository {
     private val api = RetrofitClient.apiService
+    private val gson = Gson()
 
     suspend fun createDebt(request: DebtCreateRequest): DebtResponse {
         return api.createDebt(request)
     }
 
     suspend fun listDebts(userId: String, status: String? = null): List<DebtResponse> {
-        return api.listDebts(userId, status)
+        return try {
+            val data = api.listDebts(userId, status)
+            try {
+                CacheHelper.saveDebts(data.map { gson.toJson(it) }, userId)
+            } catch (_: Exception) {}
+            data
+        } catch (e: Exception) {
+            if (CacheHelper.isInitialized()) {
+                val cached = CacheHelper.getDebts(userId)
+                if (cached.isNotEmpty()) return cached.map { gson.fromJson(it, DebtResponse::class.java) }
+            }
+            throw e
+        }
     }
 
     suspend fun updateDebt(debtId: String, request: DebtUpdateRequest) {

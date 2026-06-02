@@ -68,4 +68,5 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 }

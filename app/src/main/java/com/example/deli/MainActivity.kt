@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.deli.data.CacheHelper
 import com.example.deli.ui.theme.AddPurchaseScreen
 import com.example.deli.ui.theme.DebtDetailScreen
 import com.example.deli.ui.theme.DELITheme
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        CacheHelper.init(this)
         NotificationHelper.createNotificationChannels(this)
 
         setContent {
