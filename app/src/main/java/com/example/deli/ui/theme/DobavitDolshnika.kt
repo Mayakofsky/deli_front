@@ -278,7 +278,7 @@ fun DobavitDolshnika(
                         name = name,
                         amount = amount.toDouble(),
                         description = description,
-                        deadline = selectedDate?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(it)) } ?: "",
+                        deadline = selectedDate?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(it)) },
                         selectedFriendId = selectedFriendId,
                         onDone = onCreated
                     )
