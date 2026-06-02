@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +84,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             SecondScreen(
                                 innerPadding = innerPadding,
-                                viewModel = viewModel,
+                                mainViewModel = viewModel,
                                 onThirdMainScreen = { navController.navigate("screen_3") }
                             )
                         }
@@ -102,7 +101,7 @@ class MainActivity : ComponentActivity() {
                                 onFriends = { navController.navigate("screen_7") },
                                 onEventClick = { eventId -> navController.navigate("screen_8/$eventId") },
                                 onDebtClick = { item ->
-                                    DebtDetailState.debtItem = item
+                                    viewModel.setSelectedDebtItem(item)
                                     navController.navigate("screen_10")
                                 }
                             )
@@ -214,6 +213,7 @@ class MainActivity : ComponentActivity() {
                         composable("screen_10") {
                             DebtDetailScreen(
                                 innerPadding = innerPadding,
+                                mainViewModel = viewModel,
                                 onBack = { navController.popBackStack() },
                                 onDeleted = { refreshTrigger.value++ }
                             )
