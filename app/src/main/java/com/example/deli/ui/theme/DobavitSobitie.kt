@@ -273,7 +273,7 @@ fun DobavitSobitie(
                     createEventViewModel.createEvent(
                         creatorId = userId,
                         title = title,
-                        deadline = selectedDate?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(it)) } ?: "",
+                        deadline = selectedDate?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date(it)) },
                         participantIds = participantUserIds.filter { it.isNotEmpty() },
                         guestNames = participantNames.filterIndexed { index, _ -> participantUserIds[index].isEmpty() }
                     )
