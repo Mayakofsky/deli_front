@@ -43,7 +43,7 @@ fun PhotoViewerDialog(
             modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
             AsyncImage(
-                model = RetrofitClient.BASE_URL + url.removePrefix("/"),
+                model = RetrofitClient.fullUrl(url),
                 contentDescription = "Фото",
                 modifier = Modifier
                     .fillMaxSize()
