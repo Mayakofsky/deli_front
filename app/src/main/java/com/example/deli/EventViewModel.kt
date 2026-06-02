@@ -16,7 +16,8 @@ data class EventUiState(
     val balances: List<BalanceItem> = emptyList(),
     val participantLinks: Map<String, String?> = emptyMap(),
     val isLoading: Boolean = true,
-    val linksLoading: Boolean = false
+    val linksLoading: Boolean = false,
+    val error: String? = null
 )
 
 class EventViewModel : ViewModel() {
@@ -31,14 +32,14 @@ class EventViewModel : ViewModel() {
     fun loadEvent(eventId: String) {
         currentEventId = eventId
         viewModelScope.launch {
-            _uiState.value = EventUiState(isLoading = true)
+            _uiState.value = EventUiState(isLoading = true, error = null)
             try {
                 val event = eventRepository.getEvent(eventId)
                 val purchases = eventRepository.listPurchases(eventId)
                 val balances = eventRepository.getBalances(eventId)
-                _uiState.value = EventUiState(event = event, purchases = purchases, balances = balances)
-            } catch (_: Exception) {
-                _uiState.value = EventUiState(isLoading = false)
+                _uiState.value = EventUiState(event = event, purchases = purchases, balances = balances, isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = EventUiState(isLoading = false, error = e.message ?: "Ошибка загрузки события")
             }
         }
     }
@@ -63,8 +64,8 @@ class EventViewModel : ViewModel() {
                     }.awaitAll().toMap()
                 }
                 _uiState.value = _uiState.value.copy(participantLinks = links, linksLoading = false)
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(linksLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(linksLoading = false, error = e.message ?: "Ошибка загрузки ссылок")
             }
         }
     }
