@@ -24,8 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -53,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,27 +64,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.deli.BalanceItem
 import com.example.deli.EventParticipant
 import com.example.deli.EventResponse
-import com.example.deli.GuestCreateRequest
-import com.example.deli.ParticipantAddRequest
+import com.example.deli.FriendUser
+import com.example.deli.EventViewModel
 import com.example.deli.PurchaseResponse
 import com.example.deli.PurchaseUpdateRequest
 import com.example.deli.RetrofitClient
-
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -95,11 +90,8 @@ fun EventDetailScreen(
     onBack: () -> Unit,
     onAddPurchase: (String) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    var event by remember { mutableStateOf<EventResponse?>(null) }
-    var purchases by remember { mutableStateOf<List<PurchaseResponse>>(emptyList()) }
-    var balances by remember { mutableStateOf<List<BalanceItem>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
+    val eventViewModel: EventViewModel = viewModel()
+    val eventState by eventViewModel.uiState.collectAsState()
 
     var participantsExpanded by remember { mutableStateOf(false) }
     var showAddParticipantDialog by remember { mutableStateOf(false) }
@@ -109,51 +101,32 @@ fun EventDetailScreen(
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
-    var participantLinks by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
-    var linksLoading by remember { mutableStateOf(false) }
 
-    fun loadData() {
-        scope.launch {
-            try {
-                event = RetrofitClient.apiService.getEvent(eventId)
-                purchases = RetrofitClient.apiService.listPurchases(eventId)
-                balances = RetrofitClient.apiService.getBalances(eventId)
-            } catch (_: Exception) {}
-            loading = false
-        }
-    }
+    LaunchedEffect(eventId, refreshKey) { eventViewModel.loadEvent(eventId) }
 
-    LaunchedEffect(eventId, refreshKey) { loadData() }
+    val event = eventState.event
+    val purchases = eventState.purchases
+    val balances = eventState.balances
+    val participantLinks = eventState.participantLinks
+    val linksLoading = eventState.linksLoading
 
     val buyerIds = purchases.map { it.buyer?.user_id }.toSet()
     val participants = event?.participants?.sortedByDescending { buyerIds.contains(it.user_id) } ?: emptyList()
     val balanceMap = balances.associateBy { it.user_id }
 
     LaunchedEffect(participantsExpanded, balances) {
-        if (!participantsExpanded) return@LaunchedEffect
-        val creditorIds = balances.filter { it.balance > 0 }.map { it.user_id }
-        if (creditorIds.isEmpty()) return@LaunchedEffect
-        linksLoading = true
-        participantLinks = coroutineScope {
-            creditorIds.map { id ->
-                async {
-                    try {
-                        val user = RetrofitClient.apiService.getUser(id)
-                        id to user.link
-                    } catch (_: Exception) {
-                        id to null
-                    }
-                }
-            }.awaitAll().toMap()
+        if (participantsExpanded) {
+            eventViewModel.loadParticipantLinks(userId)
         }
-        linksLoading = false
     }
 
     if (showAddParticipantDialog) {
         AddParticipantDialog(
+            eventViewModel = eventViewModel,
             eventId = eventId,
+            userId = userId,
             onDismiss = { showAddParticipantDialog = false },
-            onAdded = { showAddParticipantDialog = false; loadData() }
+            onAdded = { showAddParticipantDialog = false; eventViewModel.loadEvent(eventId) }
         )
     }
 
@@ -165,10 +138,7 @@ fun EventDetailScreen(
             confirmButton = {
                 Button(onClick = {
                     showCloseConfirm = false
-                    scope.launch {
-                        try { RetrofitClient.apiService.closeEvent(eventId) } catch (_: Exception) {}
-                        loadData()
-                    }
+                    eventViewModel.closeEvent()
                 }) { Text("Закрыть") }
             },
             dismissButton = {
@@ -184,12 +154,8 @@ fun EventDetailScreen(
             text = { Text("У этого участника нет долгов, его можно удалить.") },
             confirmButton = {
                 Button(onClick = {
-                    val id = uid
                     showDeleteParticipantConfirm = null
-                    scope.launch {
-                        try { RetrofitClient.apiService.removeParticipant(eventId, id) } catch (_: Exception) {}
-                        loadData()
-                    }
+                    eventViewModel.removeParticipant(eventId, uid)
                 }) { Text("Удалить") }
             },
             dismissButton = {
@@ -200,10 +166,12 @@ fun EventDetailScreen(
 
     editingPurchase?.let { purchase ->
         EditPurchaseDialog(
+            eventViewModel = eventViewModel,
+            eventId = eventId,
             purchase = purchase,
             participants = participants,
             onDismiss = { editingPurchase = null },
-            onSaved = { editingPurchase = null; loadData() }
+            onSaved = { editingPurchase = null; eventViewModel.loadEvent(eventId) }
         )
     }
 
@@ -222,7 +190,7 @@ fun EventDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
             }
             Text(
                 text = event?.title ?: "Загрузка...",
@@ -237,7 +205,7 @@ fun EventDetailScreen(
             }
         }
 
-        if (loading) {
+        if (eventState.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -328,7 +296,7 @@ fun EventDetailScreen(
                                                             shape = RoundedCornerShape(8.dp),
                                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                                                         ) {
-                                                            Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
                                                             Spacer(Modifier.width(4.dp))
                                                             Text("Оплатить", fontSize = 12.sp)
                                                         }
@@ -436,7 +404,7 @@ fun PurchaseCard(purchase: PurchaseResponse, onEdit: () -> Unit, onPhotoClick: (
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = RetrofitClient.BASE_URL + purchase.receipt_photo_url.removePrefix("/"),
+                        model = RetrofitClient.fullUrl(purchase.receipt_photo_url),
                         contentDescription = "Фото чека",
                         modifier = Modifier.fillMaxSize().pointerInput(Unit) {
                             detectTapGestures { onPhotoClick(purchase.receipt_photo_url) }
@@ -451,7 +419,9 @@ fun PurchaseCard(purchase: PurchaseResponse, onEdit: () -> Unit, onPhotoClick: (
 
 @Composable
 fun AddParticipantDialog(
+    eventViewModel: EventViewModel,
     eventId: String,
+    userId: String,
     onDismiss: () -> Unit,
     onAdded: () -> Unit
 ) {
@@ -476,11 +446,7 @@ fun AddParticipantDialog(
                             friendsLoading = true
                             scope.launch {
                                 try {
-                                    val raw = RetrofitClient.apiService.getFriendsList("")
-                                    friends.clear()
-                                } catch (_: Exception) {}
-                                try {
-                                    val list = RetrofitClient.apiService.getFriendsList("")
+                                    val list = eventViewModel.getFriendsList(userId)
                                     friends.clear()
                                     friends.addAll(list.map { EventParticipant(it.user_id, it.first_name, it.last_name) })
                                 } catch (_: Exception) {}
@@ -504,12 +470,8 @@ fun AddParticipantDialog(
                                 TextButton(
                                     onClick = {
                                         adding = true
-                                        scope.launch {
-                                            try {
-                                                RetrofitClient.apiService.addParticipant(eventId, ParticipantAddRequest(f.user_id))
-                                                onAdded()
-                                            } catch (e: Exception) { error = e.message }
-                                            adding = false
+                                        eventViewModel.addParticipant(eventId, f.user_id) {
+                                            onAdded()
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
@@ -528,19 +490,15 @@ fun AddParticipantDialog(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        if (error != null) {
-                            Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        error?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
                         Button(
                             onClick = {
                                 if (manualName.isBlank()) return@Button
                                 adding = true
-                                scope.launch {
-                                    try {
-                                        RetrofitClient.apiService.addGuest(eventId, GuestCreateRequest(manualName))
-                                        onAdded()
-                                    } catch (e: Exception) { error = e.message }
-                                    adding = false
+                                eventViewModel.addGuest(eventId, manualName) {
+                                    onAdded()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -561,12 +519,13 @@ fun AddParticipantDialog(
 
 @Composable
 fun EditPurchaseDialog(
+    eventViewModel: EventViewModel,
+    eventId: String,
     purchase: PurchaseResponse,
     participants: List<EventParticipant>,
     onDismiss: () -> Unit,
     onSaved: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
     var editDescription by remember { mutableStateOf(purchase.description) }
     var editAmount by remember { mutableStateOf(purchase.amount.toString()) }
     val editBeneficiaries = remember {
@@ -622,20 +581,12 @@ fun EditPurchaseDialog(
                 onClick = {
                     val amount = editAmount.toDoubleOrNull() ?: return@Button
                     saving = true
-                    scope.launch {
-                        try {
-                            RetrofitClient.apiService.updatePurchase(
-                                purchase.event_id ?: "",
-                                purchase.id,
-                                PurchaseUpdateRequest(
-                                    description = editDescription,
-                                    amount = amount,
-                                    beneficiary_ids = editBeneficiaries.toList()
-                                )
-                            )
-                            onSaved()
-                        } catch (_: Exception) {}
-                        saving = false
+                    eventViewModel.updatePurchase(eventId, purchase.id, PurchaseUpdateRequest(
+                        description = editDescription,
+                        amount = amount,
+                        beneficiary_ids = editBeneficiaries.toList()
+                    )) {
+                        onSaved()
                     }
                 },
                 enabled = !saving && editAmount.toDoubleOrNull() != null
