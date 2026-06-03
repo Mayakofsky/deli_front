@@ -84,7 +84,7 @@ fun ThirdMainScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("DELI", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("DELI", style = MaterialTheme.typography.headlineMedium)
             IconButton(onClick = onProfile, modifier = Modifier.size(48.dp)) {
                 Icon(Icons.Default.Person, contentDescription = "Профиль", tint = MaterialTheme.colorScheme.primary)
             }

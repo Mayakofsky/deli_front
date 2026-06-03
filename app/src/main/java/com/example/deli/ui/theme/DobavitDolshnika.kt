@@ -93,6 +93,10 @@ fun DobavitDolshnika(
         }
     }
 
+    LaunchedEffect(userId) {
+        addDebtViewModel.loadCurrentUser(userId)
+    }
+
     val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
 
     if (showDatePicker) {
@@ -177,10 +181,19 @@ fun DobavitDolshnika(
         Text(
             text = "Добавить должника",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (debtState.linkLoaded && debtState.currentUserLink.isNullOrBlank()) {
+            Text(
+                text = "Вы не прикрепили ссылку для перевода. Можете прикрепить её в профиле",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),

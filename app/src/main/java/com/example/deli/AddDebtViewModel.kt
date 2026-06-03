@@ -15,7 +15,9 @@ data class AddDebtUiState(
     val isUploading: Boolean = false,
     val isCreating: Boolean = false,
     val error: String? = null,
-    val photoUrl: String? = null
+    val photoUrl: String? = null,
+    val currentUserLink: String? = null,
+    val linkLoaded: Boolean = false
 )
 
 class AddDebtViewModel : ViewModel() {
@@ -34,6 +36,17 @@ class AddDebtViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(friends = items, friendsLoading = false)
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(friendsLoading = false)
+            }
+        }
+    }
+
+    fun loadCurrentUser(userId: String) {
+        viewModelScope.launch {
+            try {
+                val user = userRepository.getUser(userId)
+                _uiState.value = _uiState.value.copy(currentUserLink = user.link, linkLoaded = true)
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(linkLoaded = true)
             }
         }
     }

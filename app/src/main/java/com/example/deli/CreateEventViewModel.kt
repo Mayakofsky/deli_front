@@ -12,12 +12,15 @@ data class CreateEventUiState(
     val friendsLoading: Boolean = false,
     val isCreating: Boolean = false,
     val error: String? = null,
-    val createdEventId: String? = null
+    val createdEventId: String? = null,
+    val currentUserLink: String? = null,
+    val linkLoaded: Boolean = false
 )
 
 class CreateEventViewModel : ViewModel() {
     private val eventRepository = EventRepository()
     private val friendRepository = FriendRepository()
+    private val userRepository = UserRepository()
 
     private val _uiState = MutableStateFlow(CreateEventUiState())
     val uiState: StateFlow<CreateEventUiState> = _uiState.asStateFlow()
@@ -30,6 +33,17 @@ class CreateEventViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(friends = items, friendsLoading = false)
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(friendsLoading = false)
+            }
+        }
+    }
+
+    fun loadCurrentUser(userId: String) {
+        viewModelScope.launch {
+            try {
+                val user = userRepository.getUser(userId)
+                _uiState.value = _uiState.value.copy(currentUserLink = user.link, linkLoaded = true)
+            } catch (_: Exception) {
+                _uiState.value = _uiState.value.copy(linkLoaded = true)
             }
         }
     }

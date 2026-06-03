@@ -85,6 +85,10 @@ fun DobavitSobitie(
         createState.createdEventId?.let { onCreated(it) }
     }
 
+    LaunchedEffect(userId) {
+        createEventViewModel.loadCurrentUser(userId)
+    }
+
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
         DatePickerDialog(
@@ -174,10 +178,19 @@ fun DobavitSobitie(
         Text(
             text = "Создание события",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (createState.linkLoaded && createState.currentUserLink.isNullOrBlank()) {
+            Text(
+                text = "Вы не прикрепили ссылку для перевода. Можете прикрепить её в профиле",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {

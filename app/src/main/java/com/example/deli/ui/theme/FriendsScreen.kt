@@ -90,8 +90,7 @@ fun FriendsScreen(
             }
             Text(
                 text = "Друзья",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineMedium
             )
         }
 

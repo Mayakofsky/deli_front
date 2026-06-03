@@ -196,7 +196,6 @@ fun Profile(
                 Text(
                     text = userName.ifBlank { "Пользователь" },
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
 
@@ -262,8 +261,7 @@ fun Profile(
                     Spacer(modifier = Modifier.size(4.dp))
                     Text(
                         text = "?",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.clickable { showLinkDialog = true }
                     )

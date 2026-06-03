@@ -306,14 +306,13 @@ fun EventDetailScreen(
                                                         ) {
                                                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
                                                             Spacer(Modifier.width(4.dp))
-                                                            Text("Оплатить", fontSize = 12.sp)
+                                                            Text("Оплатить", style = MaterialTheme.typography.labelSmall)
                                                         }
                                                     } else if (!linksLoading) {
                                                         Text(
                                                             "нет ссылки",
                                                             style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                            fontSize = 10.sp
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
                                                 }

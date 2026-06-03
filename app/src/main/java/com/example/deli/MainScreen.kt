@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -153,10 +154,7 @@ fun MainScreen(
                 // отображает короткое описание приложения
                 Text(
                     text = "Делим расходы просто",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        color = subtitleColor
-                    )
+                    style = MaterialTheme.typography.bodyLarge.copy(color = subtitleColor)
                 )
             }
 
@@ -187,7 +185,7 @@ fun MainScreen(
                         // текст внутри кнопки
                         Text(
                             text = "Начать",
-                            fontSize = 18.sp
+                            style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
