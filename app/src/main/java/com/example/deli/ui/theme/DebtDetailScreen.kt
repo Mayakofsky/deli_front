@@ -28,11 +28,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -326,6 +331,33 @@ private fun CreditorActions(
     onClosed: () -> Unit
 ) {
     val status = debtDetail?.status
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val pendingDelete = {
+        showDeleteConfirm = true
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Удалить долг") },
+            text = { Text("Вы уверены? Это действие нельзя отменить.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirm = false
+                        debtViewModel.closeDebt(debtId) { onClosed() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") }
+            }
+        )
+    }
 
     when (status) {
         "paid" -> {
@@ -346,7 +378,7 @@ private fun CreditorActions(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(16.dp))
-            DeleteDebtButton(debtId = debtId, debtViewModel = debtViewModel, onClosed = onClosed)
+            DeleteDebtButton(onClick = pendingDelete)
         }
         else -> {
             if (debtDetail?.payment_photo_url == "confirmed") {
@@ -368,7 +400,7 @@ private fun CreditorActions(
 
                 Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = { debtViewModel.closeDebt(debtId) { onClosed() } },
+                    onClick = { pendingDelete() },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(
@@ -388,20 +420,16 @@ private fun CreditorActions(
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(16.dp))
-                DeleteDebtButton(debtId = debtId, debtViewModel = debtViewModel, onClosed = onClosed)
+                DeleteDebtButton(onClick = pendingDelete)
             }
         }
     }
 }
 
 @Composable
-private fun DeleteDebtButton(
-    debtId: String?,
-    debtViewModel: DebtViewModel,
-    onClosed: () -> Unit
-) {
+private fun DeleteDebtButton(onClick: () -> Unit) {
     Button(
-        onClick = { debtViewModel.closeDebt(debtId) { onClosed() } },
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(
