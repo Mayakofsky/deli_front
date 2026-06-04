@@ -294,74 +294,74 @@ private fun DebtorActions(
 ) {
     val status = debtDetail?.status
 
-    when (status) {
-        "paid" -> {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
+    if (status == "paid") {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
+            )
         }
-        "awaiting_confirmation" -> {
+        return
+    }
+
+    if (status == "awaiting_confirmation") {
+        Text(
+            text = "Подтверждение отправлено. Ожидайте проверки.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            textAlign = TextAlign.Center
+        )
+        if (debtDetail.payment_photo_url != null) {
+            Spacer(Modifier.height(8.dp))
+            PaymentPhotoThumbnail(photoUrl = debtDetail.payment_photo_url)
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+
+    if (!debtState.linkLoading) {
+        if (debtState.counterpartyLink != null) {
+            Button(
+                onClick = onPay,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Оплатить")
+            }
+            Spacer(Modifier.height(12.dp))
+        } else {
             Text(
-                text = "Подтверждение отправлено. Ожидайте проверки.",
+                text = "Пользователь не прикрепил ссылку для перевода",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                textAlign = TextAlign.Center
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             )
-            if (debtDetail.payment_photo_url != null) {
-                Spacer(Modifier.height(8.dp))
-                PaymentPhotoThumbnail(photoUrl = debtDetail.payment_photo_url)
-            }
+            Spacer(Modifier.height(12.dp))
         }
-        else -> {
-            if (!debtState.linkLoading) {
-                if (debtState.counterpartyLink != null) {
-                    Button(
-                        onClick = onPay,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Оплатить")
-                    }
-                    Spacer(Modifier.height(12.dp))
-                } else {
-                    Text(
-                        text = "Пользователь не прикрепил ссылку для перевода",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-            }
+    }
 
-            if (debtState.isUploading) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                Spacer(Modifier.height(8.dp))
-            } else {
-                Button(
-                    onClick = onAttachProof,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                ) {
-                    Icon(Icons.Default.PhotoCamera, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Прикрепить подтверждение оплаты")
-                }
-            }
+    if (debtState.isUploading) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        Spacer(Modifier.height(8.dp))
+    } else {
+        Button(
+            onClick = onAttachProof,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Icon(Icons.Default.PhotoCamera, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Прикрепить подтверждение оплаты")
         }
     }
 }
@@ -393,6 +393,19 @@ private fun CreditorActions(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (debtDetail.payment_photo_url != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Фото подтверждения:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                PaymentPhotoThumbnail(
+                    photoUrl = debtDetail.payment_photo_url,
+                    onClick = { onPhotoClick(debtDetail.payment_photo_url) }
+                )
+            }
         }
         "awaiting_confirmation" -> {
             Text(

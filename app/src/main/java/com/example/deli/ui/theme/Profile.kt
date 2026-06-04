@@ -176,6 +176,14 @@ fun Profile(
             }
         }
 
+        Text(
+            text = "${profileState.serverFirstName} ${profileState.serverLastName}".trim(),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         profileState.error?.let { error ->
             Text(
                 text = error,

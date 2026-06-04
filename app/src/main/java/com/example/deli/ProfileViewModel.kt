@@ -13,6 +13,8 @@ data class ProfileUiState(
     val paymentLink: String = "",
     val paymentLinkLoading: Boolean = true,
     val serverPhotoUrl: String? = null,
+    val serverFirstName: String = "",
+    val serverLastName: String = "",
     val isUploading: Boolean = false,
     val error: String? = null
 )
@@ -31,7 +33,9 @@ class ProfileViewModel : ViewModel() {
                 _uiState.value = ProfileUiState(
                     paymentLink = user.link ?: "",
                     paymentLinkLoading = false,
-                    serverPhotoUrl = user.photo_url
+                    serverPhotoUrl = user.photo_url,
+                    serverFirstName = user.first_name,
+                    serverLastName = user.last_name ?: ""
                 )
             } catch (_: Exception) {
                 _uiState.value = ProfileUiState(paymentLinkLoading = false)
