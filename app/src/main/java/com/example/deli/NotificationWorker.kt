@@ -22,14 +22,14 @@ class NotificationWorker(
     override suspend fun doWork(): Result {
         NotificationHelper.createNotificationChannels(applicationContext)
         val userId = inputData.getString(KEY_USER_ID) ?: return Result.failure()
-        Log.d(TAG, "╨Я╤А╨╛╨▓╨╡╤А╨║╨░ ╤Г╨▓╨╡╨┤╨╛╨╝╨╗╨╡╨╜╨╕╨╣ ╨┤╨╗╤П userId=$userId")
+        Log.d(TAG, "Проверка уведомлений для userId=$userId")
 
         try {
             checkFriendRequests(userId)
             checkDebtDeadlines(userId)
             checkEventDeadlines(userId)
         } catch (e: Exception) {
-            Log.e(TAG, "╨Ю╤И╨╕╨▒╨║╨░: ${e.message}")
+            Log.e(TAG, "Ошибка: ${e.message}")
             return Result.retry()
         }
 
@@ -77,7 +77,7 @@ class NotificationWorker(
             if (diffDays <= 3 && diffDays > 0 && debt.id !in notifiedIds) {
                 val isOwed = debt.creditor?.user_id == userId
                 val counterparty = if (isOwed) debt.debtor else debt.creditor
-                val name = counterparty?.let { "${it.first_name} ${it.last_name}".trim() } ?: "╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М"
+                val name = counterparty?.let { "${it.first_name} ${it.last_name}".trim() } ?: "Пользователь"
 
                 NotificationHelper.showDebtDeadlineNotification(
                     applicationContext, name, debt.amount, diffDays, isOwed, debt.id
@@ -101,7 +101,7 @@ class NotificationWorker(
 
         for (event in events) {
             val deadlineStr = event.deadline ?: continue
-            if (event.status == "closed" || event.status == "╨╖╨░╨║╤А╤Л╤В╨╛") continue
+            if (event.status == "closed") continue
 
             val deadlineMillis = parseDate(deadlineStr) ?: continue
             val diffDays = ((deadlineMillis - today) / dayMillis).toInt()
@@ -153,12 +153,12 @@ class NotificationWorker(
                 ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
                 workRequest
             )
-            Log.d(TAG, "╨Ч╨░╨┐╨╗╨░╨╜╨╕╤А╨╛╨▓╨░╨╜ PeriodicWork ╨┤╨╗╤П userId=$userId")
+            Log.d(TAG, "Запланирован PeriodicWork для userId=$userId")
         }
 
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-            Log.d(TAG, "PeriodicWork ╨╛╤В╨╝╨╡╨╜╤С╨╜")
+            Log.d(TAG, "PeriodicWork отменён")
         }
     }
 }

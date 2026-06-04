@@ -26,14 +26,14 @@ object NotificationHelper {
         val channels = listOf(
             NotificationChannel(
                 CHANNEL_FRIEND_REQUESTS,
-                "╨Ч╨░╨┐╤А╨╛╤Б╤Л ╨▓ ╨┤╤А╤Г╨╖╤М╤П",
+                "Запросы в друзья",
                 NotificationManager.IMPORTANCE_HIGH
-            ).apply { description = "╨г╨▓╨╡╨┤╨╛╨╝╨╗╨╡╨╜╨╕╤П ╨╛ ╨╜╨╛╨▓╤Л╤Е ╨╖╨░╨┐╤А╨╛╤Б╨░╤Е ╨▓ ╨┤╤А╤Г╨╖╤М╤П" },
+            ).apply { description = "Уведомления о новых запросах в друзья" },
             NotificationChannel(
                 CHANNEL_DEADLINES,
-                "╨Ф╨╡╨┤╨╗╨░╨╣╨╜╤Л",
+                "Дедлайны",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "╨г╨▓╨╡╨┤╨╛╨╝╨╗╨╡╨╜╨╕╤П ╨╛ ╨┐╤А╨╕╨▒╨╗╨╕╨╢╨░╤О╤Й╨╕╤Е╤Б╤П ╨┤╨╡╨┤╨╗╨░╨╣╨╜╨░╤Е ╨┤╨╛╨╗╨│╨╛╨▓ ╨╕ ╤Б╨╛╨▒╤Л╤В╨╕╨╣" }
+            ).apply { description = "Уведомления о приближающихся дедлайнах долгов и событий" }
         )
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         channels.forEach { manager.createNotificationChannel(it) }
@@ -52,11 +52,11 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_REQUESTS)
             .setSmallIcon(android.R.drawable.ic_input_add)
-            .setContentTitle("╨Э╨╛╨▓╤Л╨╣ ╨╖╨░╨┐╤А╨╛╤Б ╨▓ ╨┤╤А╤Г╨╖╤М╤П")
-            .setContentText("╨г ╨▓╨░╤Б ╨╜╨╛╨▓╤Л╨╣ ╨╖╨░╨┐╤А╨╛╤Б ╨▓ ╨┤╤А╤Г╨╖╤М╤П ╨╛╤В $friendName")
+            .setContentTitle("Новый запрос в друзья")
+            .setContentText("У вас новый запрос в друзья от $friendName")
             .setStyle(
                 if (count > 1) NotificationCompat.InboxStyle()
-                    .addLine("╨г ╨▓╨░╤Б $count ╨╜╨╛╨▓╤Л╤Е ╨╖╨░╨┐╤А╨╛╤Б╨░ ╨▓ ╨┤╤А╤Г╨╖╤М╤П")
+                    .addLine("У вас $count новых запроса в друзья")
                 else null
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -85,11 +85,11 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "╨б╨║╨╛╤А╨╛ ╨┤╨╡╨┤╨╗╨░╨╣╨╜ ╨┤╨╛╨╗╨│╨░"
+        val title = "Скоро дедлайн долга"
         val body = if (isOwed) {
-            "$counterpartyName ╨┤╨╛╨╗╨╢╨╡╨╜ ╨▓╨░╨╝ ${amount}тВ╜ тАФ ╨╛╤Б╤В╨░╨╗╨╛╤Б╤М $daysLeft ╨┤╨╜."
+            "$counterpartyName должен вам ${amount}₽ — осталось $daysLeft дн."
         } else {
-            "╨Т╤Л ╨┤╨╛╨╗╨╢╨╜╤Л $counterpartyName ${amount}тВ╜ тАФ ╨╛╤Б╤В╨░╨╗╨╛╤Б╤М $daysLeft ╨┤╨╜."
+            "Вы должны $counterpartyName ${amount}₽ — осталось $daysLeft дн."
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_DEADLINES)
@@ -123,8 +123,8 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_DEADLINES)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("╨б╨║╨╛╤А╨╛ ╨┤╨╡╨┤╨╗╨░╨╣╨╜ ╤Б╨╛╨▒╤Л╤В╨╕╤П")
-            .setContentText("╨б╨╛╨▒╤Л╤В╨╕╨╡ ┬л$eventTitle┬╗ ╨╖╨░╨║╨░╨╜╤З╨╕╨▓╨░╨╡╤В╤Б╤П ╤З╨╡╤А╨╡╨╖ $daysLeft ╨┤╨╜.")
+            .setContentTitle("Скоро дедлайн события")
+            .setContentText("Событие «$eventTitle» заканчивается через $daysLeft дн.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
