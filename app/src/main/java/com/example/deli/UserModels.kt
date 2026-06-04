@@ -141,6 +141,7 @@ data class DebtResponse(
     val description: String? = null,
     val deadline: String? = null,
     val photo_url: String? = null,
+    val payment_photo_url: String? = null,
     val status: String,
     val created_at: String? = null
 )
