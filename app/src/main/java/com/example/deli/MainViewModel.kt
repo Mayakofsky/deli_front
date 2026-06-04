@@ -16,8 +16,12 @@ class MainViewModel : ViewModel() {
     private val _selectedDebtItem = MutableStateFlow<SummaryItem?>(null)
     val selectedDebtItem: StateFlow<SummaryItem?> = _selectedDebtItem.asStateFlow()
 
-    fun setSelectedDebtItem(item: SummaryItem?) {
+    private val _isDebtor = MutableStateFlow(false)
+    val isDebtor: StateFlow<Boolean> = _isDebtor.asStateFlow()
+
+    fun setSelectedDebtItem(item: SummaryItem?, isDebtor: Boolean = false) {
         _selectedDebtItem.value = item
+        _isDebtor.value = isDebtor
     }
 
     // хранит текущее состояние темы
