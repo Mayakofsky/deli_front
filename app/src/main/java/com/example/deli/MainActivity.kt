@@ -93,9 +93,11 @@ class MainActivity : ComponentActivity() {
 
                         composable("screen_3") {
                             val userId by viewModel.userId.collectAsState()
+                            val userPhotoUri by viewModel.userPhotoUri.collectAsState()
                             ThirdMainScreen(
                                 innerPadding = innerPadding,
                                 userId = userId,
+                                userPhotoUri = userPhotoUri,
                                 refreshKey = refreshTrigger.value,
                                 onDobavitSobitie = { navController.navigate("screen_4") },
                                 onDobavitDolshnika = { navController.navigate("screen_5") },
@@ -136,7 +138,6 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("screen_6") {
-                            val userName by viewModel.userName.collectAsState()
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
                             val uid by viewModel.userId.collectAsState()
 
@@ -154,14 +155,13 @@ class MainActivity : ComponentActivity() {
                                     viewModel.saveNotificationsEnabled(context, !notificationsEnabled)
                                 },
                                 userId = uid,
-                                userName = userName,
                                 userPhotoUri = userPhotoUri,
-                                onUpdateProfile = { name, photo ->
-                                    viewModel.updateProfile(context, name, photo)
+                                onPhotoChanged = { url ->
+                                    viewModel.updateProfilePhoto(url)
                                 },
                                 onLogout = {
                                     viewModel.setUserId("")
-                                    viewModel.updateProfile(context, "Пользователь", null)
+                                    viewModel.updateProfilePhoto(null)
                                     navController.navigate("screen_2") {
                                         popUpTo(0) { inclusive = true }
                                     }

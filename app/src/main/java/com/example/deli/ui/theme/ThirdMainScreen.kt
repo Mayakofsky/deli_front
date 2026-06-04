@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
@@ -32,6 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -46,12 +48,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.deli.EventResponse
 import com.example.deli.HomeViewModel
+import com.example.deli.RetrofitClient
 import com.example.deli.SummaryItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,6 +65,7 @@ import com.example.deli.SummaryItem
 fun ThirdMainScreen(
     innerPadding: PaddingValues,
     userId: String,
+    userPhotoUri: String? = null,
     refreshKey: Int = 0,
     onDobavitSobitie: () -> Unit,
     onDobavitDolshnika: () -> Unit,
@@ -86,7 +93,23 @@ fun ThirdMainScreen(
         ) {
             Text("DELI", style = MaterialTheme.typography.headlineMedium)
             IconButton(onClick = onProfile, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.Default.Person, contentDescription = "Профиль", tint = MaterialTheme.colorScheme.primary)
+                if (userPhotoUri != null) {
+                    val fullUrl = if (userPhotoUri.startsWith("http")) userPhotoUri
+                        else RetrofitClient.fullUrl(userPhotoUri)
+                    Surface(
+                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        AsyncImage(
+                            model = fullUrl,
+                            contentDescription = "Профиль",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                } else {
+                    Icon(Icons.Default.Person, contentDescription = "Профиль", tint = MaterialTheme.colorScheme.primary)
+                }
             }
         }
 

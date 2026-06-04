@@ -1,5 +1,7 @@
 package com.example.deli
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +12,9 @@ import kotlinx.coroutines.launch
 data class ProfileUiState(
     val paymentLink: String = "",
     val paymentLinkLoading: Boolean = true,
-    val serverName: String? = null
+    val serverPhotoUrl: String? = null,
+    val isUploading: Boolean = false,
+    val error: String? = null
 )
 
 class ProfileViewModel : ViewModel() {
@@ -27,7 +31,7 @@ class ProfileViewModel : ViewModel() {
                 _uiState.value = ProfileUiState(
                     paymentLink = user.link ?: "",
                     paymentLinkLoading = false,
-                    serverName = listOfNotNull(user.first_name, user.last_name).joinToString(" ").ifBlank { null }
+                    serverPhotoUrl = user.photo_url
                 )
             } catch (_: Exception) {
                 _uiState.value = ProfileUiState(paymentLinkLoading = false)
@@ -44,11 +48,17 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    fun saveProfileName(userId: String, name: String) {
+    fun saveProfilePhoto(userId: String, context: Context, uri: Uri, onUrlReady: (String) -> Unit) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUploading = true, error = null)
             try {
-                userRepository.updateUser(userId, UserUpdateRequest(first_name = name))
-            } catch (_: Exception) {}
+                val url = userRepository.uploadPhoto(context, uri)
+                userRepository.updateUser(userId, UserUpdateRequest(photo_url = url))
+                _uiState.value = _uiState.value.copy(serverPhotoUrl = url, isUploading = false)
+                onUrlReady(url)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isUploading = false, error = "Ошибка загрузки: ${e.message}")
+            }
         }
     }
 }

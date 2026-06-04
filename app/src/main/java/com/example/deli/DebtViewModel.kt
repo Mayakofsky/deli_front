@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 
 data class DebtUiState(
     val counterpartyLink: String? = null,
+    val counterpartyPhotoUrl: String? = null,
     val linkLoading: Boolean = true,
     val debtDetail: DebtResponse? = null,
     val isLoadingDetail: Boolean = false,
@@ -34,7 +35,11 @@ class DebtViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(linkLoading = true)
             try {
                 val user = userRepository.getUser(userId)
-                _uiState.value = _uiState.value.copy(counterpartyLink = user.link, linkLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    counterpartyLink = user.link,
+                    counterpartyPhotoUrl = user.photo_url,
+                    linkLoading = false
+                )
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(linkLoading = false)
             }

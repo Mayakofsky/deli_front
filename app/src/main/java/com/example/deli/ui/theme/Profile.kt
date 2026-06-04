@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
@@ -29,8 +28,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -50,13 +49,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.deli.ProfileViewModel
+import com.example.deli.RetrofitClient
 
 @Composable
 fun Profile(
@@ -67,17 +67,14 @@ fun Profile(
     notificationsEnabled: Boolean,
     onToggleNotifications: () -> Unit,
     userId: String,
-    userName: String,
     userPhotoUri: String?,
-    onUpdateProfile: (String, String?) -> Unit,
+    onPhotoChanged: (String?) -> Unit,
     onLogout: () -> Unit,
 ) {
     val profileViewModel: ProfileViewModel = viewModel()
     val profileState by profileViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    var isEditing by remember { mutableStateOf(false) }
-    var editedName by remember { mutableStateOf(userName) }
-    var editedPhotoUri by remember { mutableStateOf(userPhotoUri) }
     var paymentLink by remember { mutableStateOf("") }
     var showLinkDialog by remember { mutableStateOf(false) }
 
@@ -87,23 +84,20 @@ fun Profile(
         }
     }
 
-    LaunchedEffect(profileState) {
-        if (!profileState.paymentLinkLoading) {
-            if (profileState.paymentLink.isNotEmpty() && paymentLink.isEmpty()) {
-                paymentLink = profileState.paymentLink
-            }
-            profileState.serverName?.let { name ->
-                if (name != userName) {
-                    onUpdateProfile(name, userPhotoUri)
-                }
-            }
+    LaunchedEffect(profileState.serverPhotoUrl) {
+        profileState.serverPhotoUrl?.let { url ->
+            onPhotoChanged(url)
         }
     }
 
     val photoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { editedPhotoUri = it.toString() }
+        uri?.let {
+            profileViewModel.saveProfilePhoto(userId, context, it) { url ->
+                onPhotoChanged(url)
+            }
+        }
     }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -111,6 +105,8 @@ fun Profile(
     ) { granted ->
         if (!granted) onToggleNotifications()
     }
+
+    val displayUrl = profileState.serverPhotoUrl ?: userPhotoUri
 
     Column(
         modifier = Modifier
@@ -130,16 +126,14 @@ fun Profile(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .then(
-                            if (isEditing) Modifier.clickable {
-                                photoLauncher.launch("image/*")
-                            } else Modifier
-                        ),
+                        .clickable { photoLauncher.launch("image/*") },
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    if (editedPhotoUri != null) {
+                    if (displayUrl != null) {
+                        val fullUrl = if (displayUrl.startsWith("http")) displayUrl
+                            else RetrofitClient.fullUrl(displayUrl)
                         Image(
-                            painter = rememberAsyncImagePainter(editedPhotoUri),
+                            painter = rememberAsyncImagePainter(fullUrl),
                             contentDescription = "Аватар",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -156,89 +150,40 @@ fun Profile(
                     }
                 }
 
-                if (isEditing) {
-                    Surface(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .align(Alignment.BottomEnd)
-                            .clip(CircleShape)
-                            .clickable { photoLauncher.launch("image/*") },
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Изменить фото",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                Surface(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .align(Alignment.BottomEnd)
+                        .clip(CircleShape)
+                        .clickable { photoLauncher.launch("image/*") },
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Изменить фото",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
         }
 
-        if (isEditing) {
-            OutlinedTextField(
-                value = editedName,
-                onValueChange = { editedName = it },
-                label = { Text("Имя пользователя") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = userName.ifBlank { "Пользователь" },
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
-                )
-
-                IconButton(onClick = { isEditing = true }) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Редактировать",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+        if (profileState.isUploading) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
         }
 
-        if (isEditing) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        editedName = userName
-                        editedPhotoUri = userPhotoUri
-                        isEditing = false
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Отмена")
-                }
-
-                Button(
-                    onClick = {
-                        profileViewModel.saveProfileName(userId, editedName)
-                        onUpdateProfile(editedName, editedPhotoUri)
-                        isEditing = false
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text("Сохранить")
-                }
-            }
+        profileState.error?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -308,7 +253,6 @@ fun Profile(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // заголовок блока настроек
         Text(
             text = "Настройки",
             style = MaterialTheme.typography.titleMedium,
@@ -335,21 +279,17 @@ fun Profile(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // иконка тёмной темы
                     Icon(
                         Icons.Default.DarkMode,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-
-                    // название настройки
                     Text(
                         text = "Тёмная тема",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
-                // переключатель включает и выключает тёмную тему
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = { onToggleTheme() }
@@ -382,7 +322,6 @@ fun Profile(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-
                     Text(
                         text = "Уведомления",
                         style = MaterialTheme.typography.bodyLarge
@@ -401,7 +340,6 @@ fun Profile(
             }
         }
 
-        // заполняет оставшееся пространство перед кнопками
         Spacer(modifier = Modifier.weight(1f))
 
         Row(

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -34,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -110,7 +112,23 @@ fun DebtDetailScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
             }
-            Spacer(Modifier.width(8.dp))
+            val photoUrl = debtState.counterpartyPhotoUrl
+            if (photoUrl != null) {
+                val fullPhotoUrl = if (photoUrl.startsWith("http")) photoUrl
+                    else RetrofitClient.fullUrl(photoUrl)
+                Surface(
+                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    AsyncImage(
+                        model = fullPhotoUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+            }
             Text(
                 text = "${item.counterparty?.first_name} ${item.counterparty?.last_name}",
                 style = MaterialTheme.typography.titleLarge,

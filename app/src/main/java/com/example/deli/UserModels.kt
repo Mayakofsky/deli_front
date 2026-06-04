@@ -161,7 +161,8 @@ data class UploadResponse(
 data class UserUpdateRequest(
     val first_name: String? = null,
     val last_name: String? = null,
-    val link: String? = null
+    val link: String? = null,
+    val photo_url: String? = null
 )
 
 data class UserResponse(
@@ -169,5 +170,6 @@ data class UserResponse(
     val email: String? = null,
     val first_name: String,
     val last_name: String? = null,
-    val link: String? = null
+    val link: String? = null,
+    val photo_url: String? = null
 )
