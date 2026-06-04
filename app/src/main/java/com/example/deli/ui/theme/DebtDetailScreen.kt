@@ -43,11 +43,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.deli.DebtResponse
 import com.example.deli.DebtUiState
 import com.example.deli.DebtViewModel
 import com.example.deli.MainViewModel
 import com.example.deli.RetrofitClient
-import com.example.deli.DebtResponse
 
 @Composable
 fun DebtDetailScreen(
@@ -146,6 +146,22 @@ fun DebtDetailScreen(
             if (debtStatus != null) {
                 Spacer(Modifier.height(12.dp))
                 StatusBadge(status = debtStatus)
+            }
+
+            if (!debtDetail?.photo_url.isNullOrBlank()) {
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                        .clip(MaterialTheme.shapes.medium),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = RetrofitClient.fullUrl(debtDetail.photo_url),
+                        contentDescription = "Фото чека",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))

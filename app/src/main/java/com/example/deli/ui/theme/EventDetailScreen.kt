@@ -93,6 +93,7 @@ fun EventDetailScreen(
     var participantsExpanded by remember { mutableStateOf(false) }
     var showAddParticipantDialog by remember { mutableStateOf(false) }
     var showCloseConfirm by remember { mutableStateOf(false) }
+    var showDeleteEventConfirm by remember { mutableStateOf(false) }
     var showDeleteParticipantConfirm by remember { mutableStateOf<String?>(null) }
     var editingPurchase by remember { mutableStateOf<PurchaseResponse?>(null) }
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
@@ -148,6 +149,28 @@ fun EventDetailScreen(
         )
     }
 
+    if (showDeleteEventConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteEventConfirm = false },
+            title = { Text("Удалить событие") },
+            text = { Text("Все данные события и покупки будут безвозвратно удалены.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteEventConfirm = false
+                        eventViewModel.deleteEvent { onBack() }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteEventConfirm = false }) { Text("Отмена") }
+            }
+        )
+    }
+
     showDeleteParticipantConfirm?.let { uid ->
         AlertDialog(
             onDismissRequest = { showDeleteParticipantConfirm = null },
@@ -199,6 +222,15 @@ fun EventDetailScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+            if (event?.creator_id == userId) {
+                IconButton(onClick = { showDeleteEventConfirm = true }) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Удалить событие",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
             if (event?.status == "active") {
                 val canClose = allDebtorsConfirmed
                 IconButton(

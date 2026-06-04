@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,16 +17,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +42,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.deli.ProfileViewModel
@@ -211,12 +221,23 @@ fun Profile(
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.size(4.dp))
-                    Text(
-                        text = "?",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.clickable { showLinkDialog = true }
-                    )
+                    Surface(
+                        modifier = Modifier.size(24.dp)
+                            .clip(CircleShape)
+                            .clickable { showLinkDialog = true },
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "?",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
@@ -242,19 +263,7 @@ fun Profile(
         }
 
         if (showLinkDialog) {
-            AlertDialog(
-                onDismissRequest = { showLinkDialog = false },
-                title = { Text("Что это?") },
-                text = {
-                    Text("Скопируйте ссылку на перевод из вашего банковского приложения (Сбер, Тинькофф и т.д.) и вставьте её сюда. " +
-                            "Когда кто-то захочет перевести вам деньги, он сможет нажать «Оплатить» и перейти по этой ссылке.")
-                },
-                confirmButton = {
-                    TextButton(onClick = { showLinkDialog = false }) {
-                        Text("Понятно")
-                    }
-                }
-            )
+            PaymentLinkGuideDialog(onDismiss = { showLinkDialog = false })
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -376,5 +385,133 @@ fun Profile(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PaymentLinkGuideDialog(onDismiss: () -> Unit) {
+    var selectedBank by remember { mutableStateOf(0) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    text = "Как получить ссылку для перевода",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { selectedBank = 0 },
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedBank == 0) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedBank == 0) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Сбер")
+                    }
+                    Button(
+                        onClick = { selectedBank = 1 },
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedBank == 1) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedBank == 1) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Т-Банк")
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (selectedBank == 0) {
+                        InstructionStep(1, "Откройте приложение СберБанк")
+                        InstructionStep(2, "На главном экране нажмите на имя и фото в левом верхнем углу")
+                        InstructionStep(3, "Выберите «Настройки» (шестерёнка справа)")
+                        InstructionStep(4, "Найдите «Ссылка для перевода» → нажмите «Копировать ссылку»")
+                        InstructionStep(5, "Вернитесь в DELI и вставьте скопированную ссылку в поле выше")
+                    } else {
+                        InstructionStep(1, "Откройте приложение Т-Банк")
+                        InstructionStep(2, "На главном экране нажмите на профиль в правом верхнем углу")
+                        InstructionStep(3, "Выберите «Получить перевод» или «Мои реквизиты»")
+                        InstructionStep(4, "Нажмите «Поделиться ссылкой» или скопируйте ссылку")
+                        InstructionStep(5, "Вернитесь в DELI и вставьте скопированную ссылку в поле выше")
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text("Понятно")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InstructionStep(number: Int, text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(28.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "$number",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

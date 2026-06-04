@@ -56,6 +56,10 @@ class EventRepository {
         return api.confirmEvent(eventId, EventConfirmRequest(userId))
     }
 
+    suspend fun deleteEvent(eventId: String) {
+        api.deleteEvent(eventId)
+    }
+
     suspend fun closeEvent(eventId: String) {
         api.closeEvent(eventId)
     }

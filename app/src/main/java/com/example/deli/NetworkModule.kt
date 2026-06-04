@@ -86,6 +86,9 @@ interface ApiService {
     @POST("events/{eventId}/confirm")
     suspend fun confirmEvent(@Path("eventId") eventId: String, @Body request: EventConfirmRequest): EventResponse
 
+    @DELETE("events/{eventId}")
+    suspend fun deleteEvent(@Path("eventId") eventId: String): OkResponse
+
     @POST("events/{eventId}/close")
     suspend fun closeEvent(@Path("eventId") eventId: String): OkResponse
 

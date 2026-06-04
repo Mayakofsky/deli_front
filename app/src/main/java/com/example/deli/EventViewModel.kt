@@ -92,6 +92,15 @@ class EventViewModel : ViewModel() {
         }
     }
 
+    fun deleteEvent(onDone: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                eventRepository.deleteEvent(currentEventId)
+                onDone()
+            } catch (_: Exception) {}
+        }
+    }
+
     fun closeEvent() {
         viewModelScope.launch {
             try {
