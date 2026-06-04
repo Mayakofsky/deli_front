@@ -64,6 +64,7 @@ fun DebtDetailScreen(
 
     val debtViewModel: DebtViewModel = viewModel()
     val debtState by debtViewModel.uiState.collectAsState()
+    val isDebtor by mainViewModel.isDebtor.collectAsState()
     val context = LocalContext.current
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
@@ -138,7 +139,7 @@ fun DebtDetailScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            if (!debtState.linkLoading) {
+            if (isDebtor && !debtState.linkLoading) {
                 if (debtState.counterpartyLink != null) {
                     Button(
                         onClick = {
