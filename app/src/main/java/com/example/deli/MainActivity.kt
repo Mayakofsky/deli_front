@@ -102,8 +102,8 @@ class MainActivity : ComponentActivity() {
                                 onProfile = { navController.navigate("screen_6") },
                                 onFriends = { navController.navigate("screen_7") },
                                 onEventClick = { eventId -> navController.navigate("screen_8/$eventId") },
-                                onDebtClick = { item ->
-                                    viewModel.setSelectedDebtItem(item)
+                                onDebtClick = { item, isDebtor ->
+                                    viewModel.setSelectedDebtItem(item, isDebtor)
                                     navController.navigate("screen_10")
                                 }
                             )

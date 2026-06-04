@@ -65,7 +65,7 @@ fun ThirdMainScreen(
     onProfile: () -> Unit,
     onFriends: () -> Unit,
     onEventClick: (String) -> Unit,
-    onDebtClick: (SummaryItem) -> Unit
+    onDebtClick: (SummaryItem, Boolean) -> Unit
 ) {
     val homeViewModel: HomeViewModel = viewModel()
     val homeState by homeViewModel.uiState.collectAsState()
@@ -176,9 +176,9 @@ fun ThirdMainScreen(
 }
 
 @Composable
-fun SummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) -> Unit, onDebtClick: (SummaryItem) -> Unit = {}) {
+fun SummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) -> Unit, onDebtClick: (SummaryItem, Boolean) -> Unit = { _, _ -> }) {
     if (item.type == "debt") {
-        DebtSummaryCard(item = item, isOwed = isOwed, onClick = { onDebtClick(item) })
+        DebtSummaryCard(item = item, isOwed = isOwed, onClick = { onDebtClick(item, !isOwed) })
     } else {
         EventSummaryCard(item = item, isOwed = isOwed, onEventClick = onEventClick)
     }
