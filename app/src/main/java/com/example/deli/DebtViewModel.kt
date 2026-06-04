@@ -1,7 +1,5 @@
 package com.example.deli
 
-import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +13,7 @@ data class DebtUiState(
     val linkLoading: Boolean = true,
     val debtDetail: DebtResponse? = null,
     val isLoadingDetail: Boolean = false,
-    val isUploading: Boolean = false,
+    val debtorFirstPress: Boolean = false,
     val error: String? = null
 )
 
@@ -58,27 +56,15 @@ class DebtViewModel : ViewModel() {
         }
     }
 
-    fun submitPaymentProof(debtId: String, context: Context, uri: Uri) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isUploading = true, error = null)
-            try {
-                val photoUrl = userRepository.uploadPhoto(context, uri)
-                debtRepository.updateDebt(debtId, DebtUpdateRequest(
-                    payment_photo_url = photoUrl
-                ))
-                _uiState.value = _uiState.value.copy(isUploading = false)
-                loadDebtDetail(debtId)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isUploading = false, error = "Ошибка: ${e.message}")
-            }
-        }
+    fun onDebtorFirstPress() {
+        _uiState.value = _uiState.value.copy(debtorFirstPress = true)
     }
 
-    fun confirmPayment(debtId: String) {
+    fun confirmTransfer(debtId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(error = null)
             try {
-                debtRepository.updateDebt(debtId, DebtUpdateRequest(status = "paid"))
+                debtRepository.updateDebt(debtId, DebtUpdateRequest(payment_photo_url = "confirmed"))
                 loadDebtDetail(debtId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Ошибка: ${e.message}")
@@ -86,12 +72,15 @@ class DebtViewModel : ViewModel() {
         }
     }
 
-    fun deleteDebt(debtId: String?, onDone: () -> Unit) {
+    fun closeDebt(debtId: String?, onDone: () -> Unit) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(error = null)
             try {
                 if (debtId != null) debtRepository.deleteDebt(debtId)
                 onDone()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Ошибка: ${e.message}")
+            }
         }
     }
 }

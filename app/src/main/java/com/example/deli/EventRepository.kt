@@ -48,6 +48,14 @@ class EventRepository {
         return api.createEvent(EventCreateRequest(creatorId, title, deadline, participantIds, guestNames))
     }
 
+    suspend fun getConfirmations(eventId: String): List<String> {
+        return api.getEventConfirmations(eventId)
+    }
+
+    suspend fun confirmEvent(eventId: String, userId: String): EventResponse {
+        return api.confirmEvent(eventId, EventConfirmRequest(userId))
+    }
+
     suspend fun closeEvent(eventId: String) {
         api.closeEvent(eventId)
     }

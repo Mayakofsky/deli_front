@@ -57,7 +57,8 @@ data class EventResponse(
     val status: String,
     val created_at: String? = null,
     val participants: List<EventParticipant>? = null,
-    val balances: List<BalanceItem>? = null
+    val balances: List<BalanceItem>? = null,
+    val confirmed_by: List<String>? = null
 )
 
 data class EventParticipant(
@@ -68,6 +69,10 @@ data class EventParticipant(
 )
 
 data class ParticipantAddRequest(
+    val user_id: String
+)
+
+data class EventConfirmRequest(
     val user_id: String
 )
 

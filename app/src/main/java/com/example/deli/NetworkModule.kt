@@ -80,6 +80,12 @@ interface ApiService {
     @GET("events/{eventId}/balances")
     suspend fun getBalances(@Path("eventId") eventId: String): List<BalanceItem>
 
+    @GET("events/{eventId}/confirmations")
+    suspend fun getEventConfirmations(@Path("eventId") eventId: String): List<String>
+
+    @POST("events/{eventId}/confirm")
+    suspend fun confirmEvent(@Path("eventId") eventId: String, @Body request: EventConfirmRequest): EventResponse
+
     @POST("events/{eventId}/close")
     suspend fun closeEvent(@Path("eventId") eventId: String): OkResponse
 

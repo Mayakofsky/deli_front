@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -109,6 +110,10 @@ fun EventDetailScreen(
     val buyerIds = purchases.map { it.buyer?.user_id }.toSet()
     val participants = event?.participants?.sortedByDescending { buyerIds.contains(it.user_id) } ?: emptyList()
     val balanceMap = balances.associateBy { it.user_id }
+    val confirmedBy = event?.confirmed_by ?: emptyList()
+    val confirmFirstPress = eventState.confirmFirstPress
+    val debtorIds = balances.filter { it.balance < -0.01 }.map { it.user_id }.toSet()
+    val allDebtorsConfirmed = debtorIds.all { it in confirmedBy }
 
     LaunchedEffect(participantsExpanded, balances) {
         if (participantsExpanded) {
@@ -195,9 +200,17 @@ fun EventDetailScreen(
                 modifier = Modifier.weight(1f)
             )
             if (event?.status == "active") {
-                    IconButton(onClick = { showCloseConfirm = true }) {
-                        Icon(Icons.Default.Lock, contentDescription = "Закрыть событие", tint = MaterialTheme.colorScheme.error)
-                    }
+                val canClose = allDebtorsConfirmed
+                IconButton(
+                    onClick = { if (canClose) showCloseConfirm = true },
+                    enabled = canClose
+                ) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = "Закрыть событие",
+                        tint = if (canClose) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -288,6 +301,40 @@ fun EventDetailScreen(
                                                     color = if (bal.balance > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
+                                            }
+                                            if (bal?.balance != null && bal.balance < -0.01) {
+                                                if (p.user_id in confirmedBy) {
+                                                    Spacer(Modifier.height(4.dp))
+                                                    Text(
+                                                        "✅ Подтверждено",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                } else if (p.user_id == userId) {
+                                                    Spacer(Modifier.height(4.dp))
+                                                    if (confirmFirstPress[p.user_id] == true) {
+                                                        Button(
+                                                            onClick = { eventViewModel.confirmPayment(eventId, userId) },
+                                                            modifier = Modifier.height(28.dp),
+                                                            shape = MaterialTheme.shapes.small,
+                                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                                            colors = ButtonDefaults.buttonColors(
+                                                                containerColor = MaterialTheme.colorScheme.error
+                                                            )
+                                                        ) {
+                                                            Text("Нажмите еще раз", style = MaterialTheme.typography.labelSmall)
+                                                        }
+                                                    } else {
+                                                        Button(
+                                                            onClick = { eventViewModel.onConfirmFirstPress(p.user_id) },
+                                                            modifier = Modifier.height(28.dp),
+                                                            shape = MaterialTheme.shapes.small,
+                                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                                        ) {
+                                                            Text("Подтвердить оплату", style = MaterialTheme.typography.labelSmall)
+                                                        }
+                                                    }
+                                                }
                                             }
                                             if (bal?.balance != null && bal.balance > 0 && p.user_id != userId && isBuyer) {
                                                 val link = participantLinks[p.user_id]

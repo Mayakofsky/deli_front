@@ -17,6 +17,7 @@ data class EventUiState(
     val participantLinks: Map<String, String?> = emptyMap(),
     val isLoading: Boolean = true,
     val linksLoading: Boolean = false,
+    val confirmFirstPress: Map<String, Boolean> = emptyMap(),
     val error: String? = null
 )
 
@@ -40,6 +41,27 @@ class EventViewModel : ViewModel() {
                 _uiState.value = EventUiState(event = event, purchases = purchases, balances = balances, isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = EventUiState(isLoading = false, error = e.message ?: "Ошибка загрузки события")
+            }
+        }
+    }
+
+    fun onConfirmFirstPress(userId: String) {
+        _uiState.value = _uiState.value.copy(
+            confirmFirstPress = _uiState.value.confirmFirstPress + (userId to true)
+        )
+    }
+
+    fun confirmPayment(eventId: String, userId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(error = null)
+            try {
+                eventRepository.confirmEvent(eventId, userId)
+                _uiState.value = _uiState.value.copy(
+                    confirmFirstPress = _uiState.value.confirmFirstPress - userId
+                )
+                loadEvent(eventId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Ошибка: ${e.message}")
             }
         }
     }
