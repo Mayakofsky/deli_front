@@ -74,17 +74,11 @@ interface ApiService {
     @GET("events/{eventId}/purchases")
     suspend fun listPurchases(@Path("eventId") eventId: String): List<PurchaseResponse>
 
-    @DELETE("events/{eventId}/purchases/{purchaseId}")
-    suspend fun deletePurchase(@Path("eventId") eventId: String, @Path("purchaseId") purchaseId: String): OkResponse
-
     @PATCH("events/{eventId}/purchases/{purchaseId}")
     suspend fun updatePurchase(@Path("eventId") eventId: String, @Path("purchaseId") purchaseId: String, @Body request: PurchaseUpdateRequest): PurchaseResponse
 
     @GET("events/{eventId}/balances")
     suspend fun getBalances(@Path("eventId") eventId: String): List<BalanceItem>
-
-    @GET("events/{eventId}/settlement")
-    suspend fun getSettlement(@Path("eventId") eventId: String): List<SettlementItem>
 
     @POST("events/{eventId}/close")
     suspend fun closeEvent(@Path("eventId") eventId: String): OkResponse

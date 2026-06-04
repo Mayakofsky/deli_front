@@ -2,9 +2,7 @@ package com.example.deli.ui.theme
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -73,7 +70,6 @@ import coil.compose.AsyncImage
 import com.example.deli.BalanceItem
 import com.example.deli.EventParticipant
 import com.example.deli.EventResponse
-import com.example.deli.FriendUser
 import com.example.deli.EventViewModel
 import com.example.deli.PurchaseResponse
 import com.example.deli.PurchaseUpdateRequest

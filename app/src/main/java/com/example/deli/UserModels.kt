@@ -113,12 +113,6 @@ data class BalanceItem(
     val balance: Double
 )
 
-data class SettlementItem(
-    val from: BalanceItem,
-    val to: BalanceItem,
-    val amount: Double
-)
-
 data class DebtCreateRequest(
     val creditor_id: String,
     val debtor_id: String,
