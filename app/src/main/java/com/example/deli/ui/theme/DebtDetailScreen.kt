@@ -273,7 +273,7 @@ private fun DebtorActions(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 textAlign = TextAlign.Center
             )
-            if (debtDetail?.payment_photo_url != null) {
+            if (debtDetail.payment_photo_url != null) {
                 Spacer(Modifier.height(8.dp))
                 PaymentPhotoThumbnail(photoUrl = debtDetail.payment_photo_url)
             }
@@ -362,7 +362,7 @@ private fun CreditorActions(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (debtDetail?.payment_photo_url != null) {
+            if (debtDetail.payment_photo_url != null) {
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = "Фото подтверждения:",
@@ -376,10 +376,10 @@ private fun CreditorActions(
                 )
             }
 
-            if (debtDetail?.debtor != null) {
+            if (debtDetail.debtor != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Плательщик: ${debtDetail.debtor.first_name} ${debtDetail.debtor.last_name ?: ""}",
+                    text = "Плательщик: ${debtDetail.debtor.first_name} ${debtDetail.debtor.last_name}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
