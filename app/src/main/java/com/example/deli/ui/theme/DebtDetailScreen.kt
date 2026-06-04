@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,6 +77,7 @@ fun DebtDetailScreen(
     val isDebtor by mainViewModel.isDebtor.collectAsState()
     val context = LocalContext.current
     var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -203,12 +206,7 @@ fun DebtDetailScreen(
             Spacer(Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    debtViewModel.deleteDebt(item.debt_id) {
-                        onDeleted()
-                        onBack()
-                    }
-                },
+                onClick = { showDeleteDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
@@ -220,6 +218,30 @@ fun DebtDetailScreen(
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Удаление долга") },
+            text = { Text("Вы уверены, что хотите удалить этот долг?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    debtViewModel.deleteDebt(item.debt_id) {
+                        onDeleted()
+                        onBack()
+                    }
+                }) {
+                    Text("Удалить", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
     }
 
     photoPreviewUrl?.let { url ->
