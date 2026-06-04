@@ -63,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -279,7 +280,7 @@ fun EventDetailScreen(
                                                 fontWeight = if (isBuyer) FontWeight.Bold else FontWeight.Normal
                                             )
                                         }
-                                        Row {
+                                        Column(horizontalAlignment = Alignment.End) {
                                             if (bal != null && bal.balance != 0.0) {
                                                 Text(
                                                     "${"%.0f".format(bal.balance)} руб",
@@ -287,34 +288,37 @@ fun EventDetailScreen(
                                                     color = if (bal.balance > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
-                                                if (bal.balance > 0 && p.user_id != userId && isBuyer) {
-                                                    Spacer(Modifier.width(8.dp))
-                                                    val link = participantLinks[p.user_id]
-                                                    if (link != null) {
-                                                        Button(
-                                                            onClick = {
-                                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
-                                                                context.startActivity(intent)
-                                                            },
-                                                            modifier = Modifier.height(28.dp),
-                                                            shape = MaterialTheme.shapes.small,
-                                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                                                        ) {
-                                                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
-                                                            Spacer(Modifier.width(4.dp))
-                                                            Text("Оплатить", style = MaterialTheme.typography.labelSmall)
-                                                        }
-                                                    } else if (!linksLoading) {
-                                                        Text(
-                                                            "нет ссылки",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
+                                            }
+                                            if (bal?.balance != null && bal.balance > 0 && p.user_id != userId && isBuyer) {
+                                                val link = participantLinks[p.user_id]
+                                                if (link != null) {
+                                                    Spacer(Modifier.height(4.dp))
+                                                    Button(
+                                                        onClick = {
+                                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                                                            context.startActivity(intent)
+                                                        },
+                                                        modifier = Modifier.height(28.dp),
+                                                        shape = MaterialTheme.shapes.small,
+                                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                                    ) {
+                                                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                        Spacer(Modifier.width(4.dp))
+                                                        Text("Оплатить", style = MaterialTheme.typography.labelSmall)
                                                     }
+                                                } else if (!linksLoading) {
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Text(
+                                                        "Пользователь не прикрепил\nссылку для перевода",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        textAlign = TextAlign.End,
+                                                        lineHeight = 14.sp
+                                                    )
                                                 }
                                             }
                                             if (isZeroBalance) {
-                                                Spacer(Modifier.width(4.dp))
+                                                Spacer(Modifier.height(2.dp))
                                                 IconButton(onClick = { showDeleteParticipantConfirm = p.user_id }, modifier = Modifier.size(24.dp)) {
                                                     Icon(Icons.Default.Delete, contentDescription = "Удалить", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                                                 }
