@@ -64,7 +64,6 @@ class DebtViewModel : ViewModel() {
             try {
                 val photoUrl = userRepository.uploadPhoto(context, uri)
                 debtRepository.updateDebt(debtId, DebtUpdateRequest(
-                    status = "awaiting_confirmation",
                     payment_photo_url = photoUrl
                 ))
                 _uiState.value = _uiState.value.copy(isUploading = false)

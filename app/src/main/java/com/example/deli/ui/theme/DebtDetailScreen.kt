@@ -303,6 +303,10 @@ private fun DebtorActions(
                 modifier = Modifier.size(48.dp)
             )
         }
+        if (debtDetail.payment_photo_url != null) {
+            Spacer(Modifier.height(8.dp))
+            PaymentPhotoThumbnail(photoUrl = debtDetail.payment_photo_url)
+        }
         return
     }
 
