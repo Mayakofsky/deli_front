@@ -95,6 +95,9 @@ interface ApiService {
     @GET("debts")
     suspend fun listDebts(@Query("user_id") userId: String, @Query("status") status: String? = null): List<DebtResponse>
 
+    @GET("debts/{debtId}")
+    suspend fun getDebt(@Path("debtId") debtId: String): DebtResponse
+
     @PATCH("debts/{debtId}")
     suspend fun updateDebt(@Path("debtId") debtId: String, @Body request: DebtUpdateRequest): OkResponse
 

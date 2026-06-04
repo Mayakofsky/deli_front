@@ -27,6 +27,10 @@ class DebtRepository {
         }
     }
 
+    suspend fun getDebt(debtId: String): DebtResponse {
+        return api.getDebt(debtId)
+    }
+
     suspend fun updateDebt(debtId: String, request: DebtUpdateRequest) {
         api.updateDebt(debtId, request)
     }

@@ -129,7 +129,8 @@ data class DebtCreateRequest(
 )
 
 data class DebtUpdateRequest(
-    val status: String
+    val status: String,
+    val payment_photo_url: String? = null
 )
 
 data class DebtResponse(
