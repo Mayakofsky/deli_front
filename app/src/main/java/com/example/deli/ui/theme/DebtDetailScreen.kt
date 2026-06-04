@@ -325,8 +325,14 @@ private fun DebtorActions(
         Spacer(Modifier.height(12.dp))
     }
 
+    if (status == "active" && debtDetail.payment_photo_url != null) {
+        Spacer(Modifier.height(8.dp))
+        PaymentPhotoThumbnail(photoUrl = debtDetail.payment_photo_url)
+        Spacer(Modifier.height(12.dp))
+    }
+
     if (!debtState.linkLoading) {
-        if (debtState.counterpartyLink != null) {
+        if (!debtState.counterpartyLink.isNullOrBlank()) {
             Button(
                 onClick = onPay,
                 modifier = Modifier.fillMaxWidth(),
@@ -457,13 +463,40 @@ private fun CreditorActions(
             }
         }
         else -> {
-            Text(
-                text = "Ожидается оплата от должника",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                textAlign = TextAlign.Center
-            )
+            if (debtDetail?.payment_photo_url != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Фото подтверждения:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                PaymentPhotoThumbnail(
+                    photoUrl = debtDetail.payment_photo_url,
+                    onClick = { onPhotoClick(debtDetail.payment_photo_url) }
+                )
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = { if (debtId != null) debtViewModel.confirmPayment(debtId) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Подтвердить погашение долга")
+                }
+            } else {
+                Text(
+                    text = "Ожидается оплата от должника",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
