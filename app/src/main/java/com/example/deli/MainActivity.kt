@@ -23,15 +23,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.deli.data.CacheHelper
-import com.example.deli.ui.theme.AddPurchaseScreen
-import com.example.deli.ui.theme.DebtDetailScreen
+import com.example.deli.ui.screens.AddPurchaseScreen
+import com.example.deli.ui.screens.DebtDetailScreen
+import com.example.deli.ui.screens.DobavitDolshnika
+import com.example.deli.ui.screens.DobavitSobitie
+import com.example.deli.ui.screens.EventDetailScreen
+import com.example.deli.ui.screens.FriendsScreen
+import com.example.deli.ui.screens.MainScreen
+import com.example.deli.ui.screens.Profile
+import com.example.deli.ui.screens.SecondScreen
+import com.example.deli.ui.screens.ThirdMainScreen
 import com.example.deli.ui.theme.DELITheme
-import com.example.deli.ui.theme.DobavitDolshnika
-import com.example.deli.ui.theme.DobavitSobitie
-import com.example.deli.ui.theme.EventDetailScreen
-import com.example.deli.ui.theme.FriendsScreen
-import com.example.deli.ui.theme.Profile
-import com.example.deli.ui.theme.ThirdMainScreen
+import com.example.deli.util.NotificationHelper
+import com.example.deli.util.NotificationPrefs
+import com.example.deli.util.NotificationWorker
+import com.example.deli.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
