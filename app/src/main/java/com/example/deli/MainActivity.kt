@@ -1,5 +1,6 @@
 package com.example.deli
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,19 +24,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.deli.data.CacheHelper
+import com.example.deli.ui.screens.AddDebtScreen
 import com.example.deli.ui.screens.AddPurchaseScreen
+import com.example.deli.ui.screens.AuthScreen
+import com.example.deli.ui.screens.CreateEventScreen
 import com.example.deli.ui.screens.DebtDetailScreen
-import com.example.deli.ui.screens.DobavitDolshnika
-import com.example.deli.ui.screens.DobavitSobitie
 import com.example.deli.ui.screens.EventDetailScreen
 import com.example.deli.ui.screens.FriendsScreen
-import com.example.deli.ui.screens.MainScreen
-import com.example.deli.ui.screens.Profile
-import com.example.deli.ui.screens.SecondScreen
-import com.example.deli.ui.screens.ThirdMainScreen
+import com.example.deli.ui.screens.HomeScreen
+import com.example.deli.ui.screens.ProfileScreen
+import com.example.deli.ui.screens.SplashScreen
 import com.example.deli.ui.theme.DELITheme
 import com.example.deli.util.NotificationHelper
-import com.example.deli.util.NotificationPrefs
 import com.example.deli.util.NotificationWorker
 import com.example.deli.viewmodel.MainViewModel
 
@@ -44,8 +44,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Инициализация кэширования и канала уведомлений
         CacheHelper.init(this)
-        NotificationHelper.createNotificationChannels(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationHelper.createNotificationChannels(this)
+        }
 
         setContent {
             val viewModel: MainViewModel = viewModel()
@@ -62,77 +65,72 @@ class MainActivity : ComponentActivity() {
                     NotificationWorker.schedule(context, userId)
                 } else {
                     NotificationWorker.cancel(context)
-                    if (userId.isEmpty()) NotificationPrefs.clearAll(context)
                 }
             }
 
             DELITheme(darkTheme = isDarkTheme, dynamicColor = false) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
-                ) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "screen_1"
+                        startDestination = "splash"
                     ) {
                         composable(
-                            route = "screen_1",
+                            route = "splash",
                             exitTransition = { fadeOut(animationSpec = tween(800)) }
                         ) {
-                            MainScreen(
+                            SplashScreen(
                                 innerPadding = innerPadding,
-                                isDarkTheme = isDarkTheme,
-                                onNavigate = { navController.navigate("screen_2") }
+                                onNavigate = { navController.navigate("auth") }
                             )
                         }
 
                         composable(
-                            route = "screen_2",
+                            route = "auth",
                             enterTransition = { fadeIn(animationSpec = tween(800)) }
                         ) {
-                            SecondScreen(
+                            AuthScreen(
                                 innerPadding = innerPadding,
                                 mainViewModel = viewModel,
-                                onThirdMainScreen = { navController.navigate("screen_3") }
+                                onNavigateToHome = { navController.navigate("home") }
                             )
                         }
 
-                        composable("screen_3") {
+                        composable("home") {
                             val userId by viewModel.userId.collectAsState()
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
-                            ThirdMainScreen(
+                            HomeScreen(
                                 innerPadding = innerPadding,
                                 userId = userId,
                                 userPhotoUri = userPhotoUri,
                                 refreshKey = refreshTrigger.value,
-                                onDobavitSobitie = { navController.navigate("screen_4") },
-                                onDobavitDolshnika = { navController.navigate("screen_5") },
-                                onProfile = { navController.navigate("screen_6") },
-                                onFriends = { navController.navigate("screen_7") },
-                                onEventClick = { eventId -> navController.navigate("screen_8/$eventId") },
+                                onCreateEvent = { navController.navigate("create_event") },
+                                onAddDebt = { navController.navigate("add_debt") },
+                                onProfile = { navController.navigate("profile") },
+                                onFriends = { navController.navigate("friends") },
+                                onEventClick = { eventId -> navController.navigate("event_detail/$eventId") },
                                 onDebtClick = { item, isDebtor ->
                                     viewModel.setSelectedDebtItem(item, isDebtor)
-                                    navController.navigate("screen_10")
+                                    navController.navigate("debt_detail")
                                 }
                             )
                         }
 
-                        composable("screen_4") {
+                        composable("create_event") {
                             val userId by viewModel.userId.collectAsState()
-                            DobavitSobitie(
+                            CreateEventScreen(
                                 innerPadding = innerPadding,
                                 userId = userId,
                                 onBack = { navController.popBackStack() },
                                 onCreated = { eventId ->
                                     refreshTrigger.value++
-                                    navController.navigate("screen_8/$eventId")
+                                    navController.navigate("event_detail/$eventId")
                                 }
                             )
                         }
 
-                        composable("screen_5") {
+                        composable("add_debt") {
                             val userId by viewModel.userId.collectAsState()
-                            DobavitDolshnika(
+                            AddDebtScreen(
                                 innerPadding = innerPadding,
                                 userId = userId,
                                 onBack = { navController.popBackStack() },
@@ -143,11 +141,11 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("screen_6") {
+                        composable("profile") {
                             val userPhotoUri by viewModel.userPhotoUri.collectAsState()
                             val uid by viewModel.userId.collectAsState()
 
-                            Profile(
+                            ProfileScreen(
                                 innerPadding = innerPadding,
                                 onBack = { navController.popBackStack() },
                                 isDarkTheme = isDarkTheme,
@@ -168,14 +166,14 @@ class MainActivity : ComponentActivity() {
                                 onLogout = {
                                     viewModel.setUserId("")
                                     viewModel.updateProfilePhoto(null)
-                                    navController.navigate("screen_2") {
+                                    navController.navigate("auth") {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
                             )
                         }
 
-                        composable("screen_7") {
+                        composable("friends") {
                             val userId by viewModel.userId.collectAsState()
                             FriendsScreen(
                                 innerPadding = innerPadding,
@@ -185,7 +183,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(
-                            route = "screen_8/{eventId}",
+                            route = "event_detail/{eventId}",
                             arguments = listOf(navArgument("eventId") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val userId by viewModel.userId.collectAsState()
@@ -196,12 +194,12 @@ class MainActivity : ComponentActivity() {
                                 userId = userId,
                                 refreshKey = refreshTrigger.value,
                                 onBack = { navController.popBackStack() },
-                                onAddPurchase = { eId -> navController.navigate("screen_9/$eId") }
+                                onAddPurchase = { eId -> navController.navigate("add_purchase/$eId") }
                             )
                         }
 
                         composable(
-                            route = "screen_9/{eventId}",
+                            route = "add_purchase/{eventId}",
                             arguments = listOf(navArgument("eventId") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val userId by viewModel.userId.collectAsState()
@@ -218,7 +216,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("screen_10") {
+                        composable("debt_detail") {
                             DebtDetailScreen(
                                 innerPadding = innerPadding,
                                 mainViewModel = viewModel,

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,7 +67,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DobavitDolshnika(
+fun AddDebtScreen(
     innerPadding: PaddingValues,
     userId: String,
     onBack: () -> Unit,
@@ -178,7 +177,7 @@ fun DobavitDolshnika(
     val displayError = localError ?: debtState.error
 
     Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(24.dp)
+        modifier = Modifier.fillMaxSize().padding(innerPadding).padding(24.dp)
     ) {
         Text(
             text = "Добавить должника",

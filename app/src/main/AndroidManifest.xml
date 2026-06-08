@@ -23,11 +23,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Receiver для уведомлений -->
-        <receiver
-            android:name=".notifications.NotificationReceiver"
-            android:exported="false" />
-
     </application>
 
 </manifest>

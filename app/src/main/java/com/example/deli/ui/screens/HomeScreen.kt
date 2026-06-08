@@ -6,7 +6,6 @@ import com.example.deli.network.RetrofitClient
 import com.example.deli.viewmodel.HomeViewModel
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +17,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -41,7 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -64,13 +60,13 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ThirdMainScreen(
+fun HomeScreen(
     innerPadding: PaddingValues,
     userId: String,
     userPhotoUri: String? = null,
     refreshKey: Int = 0,
-    onDobavitSobitie: () -> Unit,
-    onDobavitDolshnika: () -> Unit,
+    onCreateEvent: () -> Unit,
+    onAddDebt: () -> Unit,
     onProfile: () -> Unit,
     onFriends: () -> Unit,
     onEventClick: (String) -> Unit,
@@ -81,12 +77,11 @@ fun ThirdMainScreen(
 
     var tabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Мне должны", "Я должен", "События")
-    var photoPreviewUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(userId, refreshKey) { homeViewModel.loadData(userId) }
 
     Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding).padding(horizontal = 16.dp, vertical = 12.dp)
+        modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -118,8 +113,8 @@ fun ThirdMainScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuickActionCard(title = "Событие", icon = Icons.Default.Receipt, onClick = onDobavitSobitie, modifier = Modifier.weight(1f))
-            QuickActionCard(title = "Должник", icon = Icons.Default.PersonAdd, onClick = onDobavitDolshnika, modifier = Modifier.weight(1f))
+            QuickActionCard(title = "Событие", icon = Icons.Default.Receipt, onClick = onCreateEvent, modifier = Modifier.weight(1f))
+            QuickActionCard(title = "Должник", icon = Icons.Default.PersonAdd, onClick = onAddDebt, modifier = Modifier.weight(1f))
             QuickActionCard(title = "Друзья", icon = Icons.Default.Group, onClick = onFriends, modifier = Modifier.weight(1f))
         }
 
@@ -194,9 +189,6 @@ fun ThirdMainScreen(
             }
         }
 
-        photoPreviewUrl?.let { url ->
-            PhotoViewerDialog(url = url, onDismiss = { photoPreviewUrl = null })
-        }
     }
 }
 
@@ -224,16 +216,14 @@ fun DebtSummaryCard(item: SummaryItem, isOwed: Boolean, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${person?.first_name} ${person?.last_name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                    Text(
+                        text = "${person?.first_name} ${person?.last_name}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
             }
             Text(
                 text = "${"%.0f".format(item.amount)} руб",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
                 color = if (isOwed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }
@@ -257,11 +247,10 @@ fun EventSummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) 
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Событие «${item.event_title}»",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                        Text(
+                            text = "Событие «${item.event_title}»",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     if (item.deadline != null) {
                         Text("До ${item.deadline.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -270,7 +259,6 @@ fun EventSummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) 
                     Text(
                         text = "${"%.0f".format(item.amount)} руб",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
                         color = if (isOwed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
                     Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(24.dp))
@@ -291,8 +279,7 @@ fun EventSummaryCard(item: SummaryItem, isOwed: Boolean, onEventClick: (String) 
                                 Text("${p.first_name} ${p.last_name}", style = MaterialTheme.typography.bodyMedium)
                                 Text(
                                     "${"%.0f".format(if (isOwed) kotlin.math.abs(p.balance) else kotlin.math.abs(p.balance))} руб",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }
@@ -327,7 +314,7 @@ fun QuickActionCard(
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }
@@ -346,7 +333,7 @@ fun EventCard(event: EventResponse, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(event.title, style = MaterialTheme.typography.titleMedium)
                 if (event.deadline != null) {
                     Text("До ${event.deadline.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -357,10 +344,9 @@ fun EventCard(event: EventResponse, onClick: () -> Unit) {
                 )
             }
             Text(
-                text = if (event.status == "active") "Активно" else "Закрыто",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (event.status == "active") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold
+            text = if (event.status == "active") "Активно" else "Закрыто",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (event.status == "active") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -33,22 +33,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen(
+fun SplashScreen(
     innerPadding: PaddingValues,
-    isDarkTheme: Boolean,
     onNavigate: () -> Unit
 ) {
     val context = LocalContext.current
@@ -95,22 +88,19 @@ fun MainScreen(
         }
     }
 
-    // выбирает цвета фона в зависимости от темы
-    val gradientColors = if (isDarkTheme) {
-        listOf(Color(0xFF1C1B1F), Color(0xFF2B2930), Color(0xFF1C1B1F))
-    } else {
-        listOf(Color(0xFFFFFFFF), Color(0xFFF5F5F5), Color(0xFFE0E0E0))
-    }
-
-    val textColor = if (isDarkTheme) Color(0xFFFFFFFF) else Color(0xFF333333)
-    val shadowColor = if (isDarkTheme) Color(0xFF000000) else Color(0xFFBDBDBD)
-    val subtitleColor = if (isDarkTheme) Color(0xFFBDBDBD) else Color(0xFF757575)
-
     // основной контейнер экрана с фоном и выравниванием по центру
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(gradientColors))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
             .padding(innerPadding),
         contentAlignment = Alignment.Center
     ) {
@@ -125,19 +115,10 @@ fun MainScreen(
                 enter = fadeIn(animationSpec = tween(1500)),
                 exit = fadeOut(animationSpec = tween(800))
             ) {
-                // отображает название приложения с тенью и анимацией масштаба
+                // отображает название приложения с анимацией масштаба
                 Text(
                     text = "DELI",
-                    style = TextStyle(
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor,
-                        shadow = Shadow(
-                            color = shadowColor,
-                            offset = Offset(0f, 4f),
-                            blurRadius = 16f
-                        )
-                    ),
+                    style = MaterialTheme.typography.displayLarge,
                     modifier = Modifier.scale(scale)
                 )
             }
@@ -154,7 +135,9 @@ fun MainScreen(
                 // отображает короткое описание приложения
                 Text(
                     text = "Делим расходы просто",
-                    style = MaterialTheme.typography.bodyLarge.copy(color = subtitleColor)
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
 

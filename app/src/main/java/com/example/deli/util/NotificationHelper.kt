@@ -3,6 +3,9 @@ package com.example.deli.util
 import com.example.deli.MainActivity
 
 import android.Manifest
+
+//noinspection SuspiciousImport
+import android.R
 import kotlin.math.abs
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,6 +14,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -24,6 +29,7 @@ object NotificationHelper {
     private const val DEBT_DEADLINE_BASE_ID = 2000
     private const val EVENT_DEADLINE_BASE_ID = 3000
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun createNotificationChannels(context: Context) {
         val channels = listOf(
             NotificationChannel(
@@ -41,6 +47,7 @@ object NotificationHelper {
         channels.forEach { manager.createNotificationChannel(it) }
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showFriendRequestNotification(context: Context, friendName: String, count: Int) {
         if (!hasPermission(context)) return
 
@@ -53,7 +60,7 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_REQUESTS)
-            .setSmallIcon(android.R.drawable.ic_input_add)
+            .setSmallIcon(R.drawable.ic_input_add)
             .setContentTitle("Новый запрос в друзья")
             .setContentText("У вас новый запрос в друзья от $friendName")
             .setStyle(
@@ -69,6 +76,7 @@ object NotificationHelper {
         NotificationManagerCompat.from(context).notify(FRIEND_REQUEST_NOTIFICATION_ID, notification)
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showDebtDeadlineNotification(
         context: Context,
         counterpartyName: String,
@@ -95,7 +103,7 @@ object NotificationHelper {
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_DEADLINES)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -107,6 +115,7 @@ object NotificationHelper {
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showEventDeadlineNotification(
         context: Context,
         eventTitle: String,
@@ -124,7 +133,7 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_DEADLINES)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setSmallIcon(R.drawable.ic_lock_idle_alarm)
             .setContentTitle("Скоро дедлайн события")
             .setContentText("Событие «$eventTitle» заканчивается через $daysLeft дн.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

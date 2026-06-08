@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -33,17 +32,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun SecondScreen(
+fun AuthScreen(
     innerPadding: PaddingValues,
     mainViewModel: MainViewModel,
-    onThirdMainScreen: () -> Unit
+    onNavigateToHome: () -> Unit
 ) {
     val authViewModel: AuthViewModel = viewModel()
     val authState by authViewModel.uiState.collectAsState()
@@ -58,16 +56,22 @@ fun SecondScreen(
     var localError by remember { mutableStateOf(false) }
 
     val passwordsMatch = password == confirmPassword
+
     val isLoginValid = email.isNotBlank() && password.isNotBlank()
-    val isRegisterValid = firstName.isNotBlank() &&
-            secondName.isNotBlank() && email.isNotBlank() &&
-            password.isNotBlank() && confirmPassword.isNotBlank() && passwordsMatch
+
+    val isRegisterValid =
+            firstName.isNotBlank() &&
+            secondName.isNotBlank() &&
+            email.isNotBlank() &&
+            password.isNotBlank() &&
+            confirmPassword.isNotBlank() &&
+            passwordsMatch
 
     LaunchedEffect(authState.userId) {
         authState.userId?.let { uid ->
             mainViewModel.setUserId(uid)
             authViewModel.resetState()
-            onThirdMainScreen()
+            onNavigateToHome()
         }
     }
 
@@ -78,15 +82,13 @@ fun SecondScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .padding(innerPadding)
             .imePadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(
             text = if (isRegistration) "Регистрация" else "Вход",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.headlineSmall
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -197,7 +199,7 @@ fun SecondScreen(
 
             if ((showError || localError) && authState.error != null) {
                 Text(
-                        text = authState.error ?: "",
+                    text = authState.error ?: "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -222,7 +224,7 @@ fun SecondScreen(
                         localError = false
                         if (email.trim() == "a" && password == "a") {
                             mainViewModel.setUserId("USR-OFFLINE")
-                            onThirdMainScreen()
+                            onNavigateToHome()
                         } else {
                             authViewModel.register(email, password, firstName, secondName)
                         }
@@ -235,7 +237,7 @@ fun SecondScreen(
                         localError = false
                         if (email.trim() == "a" && password == "a") {
                             mainViewModel.setUserId("USR-OFFLINE")
-                            onThirdMainScreen()
+                            onNavigateToHome()
                         } else {
                             authViewModel.login(email, password)
                         }
@@ -245,9 +247,9 @@ fun SecondScreen(
                 }
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            enabled = !authState.isLoading
+                .fillMaxWidth(),
+            enabled = !authState.isLoading,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
         ) {
             if (authState.isLoading) {
                 CircularProgressIndicator(

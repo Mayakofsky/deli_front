@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -208,7 +207,7 @@ fun EventDetailScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding)
+        modifier = Modifier.fillMaxSize().padding(innerPadding)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -438,7 +437,7 @@ fun EventDetailScreen(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
         FloatingActionButton(
             onClick = { onAddPurchase(eventId) },
-            modifier = Modifier.padding(16.dp).statusBarsPadding()
+            modifier = Modifier.padding(16.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = "Добавить покупку")
         }

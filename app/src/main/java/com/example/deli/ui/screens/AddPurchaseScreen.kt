@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -100,7 +99,7 @@ fun AddPurchaseScreen(
     val displayError = localError ?: addState.error
 
     Column(
-        modifier = Modifier.fillMaxSize().statusBarsPadding().padding(innerPadding)
+        modifier = Modifier.fillMaxSize().padding(innerPadding)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
