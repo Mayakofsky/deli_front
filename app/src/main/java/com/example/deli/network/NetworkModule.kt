@@ -136,5 +136,7 @@ object RetrofitClient {
             .create(ApiService::class.java)
     }
 
-    fun fullUrl(path: String): String = BASE_URL + path.removePrefix("/")
+    fun fullUrl(path: String): String =
+        if (path.startsWith("http://") || path.startsWith("https://")) path
+        else BASE_URL + path.removePrefix("/")
 }

@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -62,7 +65,9 @@ fun PhotoViewerDialog(
                             offsetY += pan.y
                         }
                     },
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
+                error = painterResource(android.R.drawable.ic_menu_gallery),
+                fallback = painterResource(android.R.drawable.ic_menu_gallery)
             )
             IconButton(
                 onClick = onDismiss,

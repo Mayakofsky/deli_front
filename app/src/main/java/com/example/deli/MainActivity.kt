@@ -123,7 +123,9 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() },
                                 onCreated = { eventId ->
                                     refreshTrigger.value++
-                                    navController.navigate("event_detail/$eventId")
+                                    navController.navigate("event_detail/$eventId") {
+                                        popUpTo("home")
+                                    }
                                 }
                             )
                         }
