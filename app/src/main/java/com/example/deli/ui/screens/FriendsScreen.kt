@@ -1,5 +1,6 @@
 package com.example.deli.ui.screens
 
+import com.example.deli.network.RetrofitClient
 import com.example.deli.viewmodel.FriendsViewModel
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -50,10 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -192,6 +195,7 @@ private fun SearchTab(userId: String, viewModel: FriendsViewModel) {
                     RequestCard(
                         name = "${user.first_name} ${user.last_name}",
                         subtitle = user.email,
+                        photoUrl = user.photo_url,
                         actions = {
                             if (user.user_id in state.sentIds) {
                                 Button(
@@ -250,6 +254,7 @@ private fun IncomingTab(userId: String, viewModel: FriendsViewModel) {
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = "хочет добавить вас в друзья",
+                    photoUrl = user.photo_url,
                     actions = {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
@@ -298,6 +303,7 @@ private fun FriendsTab(userId: String, viewModel: FriendsViewModel) {
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = user.email,
+                    photoUrl = user.photo_url,
                     actions = {}
                 )
             }
@@ -325,6 +331,7 @@ private fun SentTab(userId: String, viewModel: FriendsViewModel) {
                 RequestCard(
                     name = "${user.first_name} ${user.last_name}",
                     subtitle = "Ожидание",
+                    photoUrl = user.photo_url,
                     actions = {
                         TextButton(
                             onClick = {
@@ -344,6 +351,7 @@ private fun SentTab(userId: String, viewModel: FriendsViewModel) {
 private fun RequestCard(
     name: String,
     subtitle: String?,
+    photoUrl: String? = null,
     actions: @Composable () -> Unit
 ) {
     Card(
@@ -358,19 +366,33 @@ private fun RequestCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Person,
+                if (photoUrl != null) {
+                    Surface(
+                        modifier = Modifier.size(48.dp).clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        AsyncImage(
+                            model = RetrofitClient.fullUrl(photoUrl),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
+                    }
+                } else {
+                    Surface(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {

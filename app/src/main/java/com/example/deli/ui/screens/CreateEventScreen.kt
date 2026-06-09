@@ -1,5 +1,6 @@
 package com.example.deli.ui.screens
 
+import com.example.deli.network.RetrofitClient
 import com.example.deli.viewmodel.CreateEventViewModel
 
 import androidx.compose.foundation.layout.Arrangement
@@ -52,10 +53,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -146,12 +149,26 @@ fun CreateEventScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Surface(
-                                        modifier = Modifier.size(40.dp).clip(CircleShape),
-                                        color = MaterialTheme.colorScheme.primaryContainer
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    if (user.photo_url != null) {
+                                        Surface(
+                                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            AsyncImage(
+                                                model = RetrofitClient.fullUrl(user.photo_url),
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        }
+                                    } else {
+                                        Surface(
+                                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            }
                                         }
                                     }
                                     Text("${user.first_name} ${user.last_name}", style = MaterialTheme.typography.bodyLarge)

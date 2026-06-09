@@ -1,6 +1,7 @@
 package com.example.deli.viewmodel
 
 import com.example.deli.model.BalanceItem
+import com.example.deli.model.EventParticipant
 import com.example.deli.model.EventResponse
 import com.example.deli.model.FriendUser
 import com.example.deli.model.PurchaseResponse
@@ -38,6 +39,20 @@ class EventViewModel : ViewModel() {
 
     private var currentEventId: String = ""
 
+    private suspend fun enrichParticipants(participants: List<EventParticipant>?): List<EventParticipant>? {
+        if (participants == null) return null
+        return coroutineScope {
+            participants.map { p ->
+                async {
+                    try {
+                        val user = userRepository.getUser(p.user_id)
+                        p.copy(photo_url = user.photo_url)
+                    } catch (_: Exception) { p }
+                }
+            }.awaitAll()
+        }
+    }
+
     fun loadEvent(eventId: String) {
         currentEventId = eventId
         viewModelScope.launch {
@@ -46,7 +61,9 @@ class EventViewModel : ViewModel() {
                 val event = eventRepository.getEvent(eventId)
                 val purchases = eventRepository.listPurchases(eventId)
                 val balances = eventRepository.getBalances(eventId)
-                _uiState.value = EventUiState(event = event, purchases = purchases, balances = balances, isLoading = false)
+                val enrichedParticipants = enrichParticipants(event.participants)
+                val enrichedEvent = event.copy(participants = enrichedParticipants)
+                _uiState.value = EventUiState(event = enrichedEvent, purchases = purchases, balances = balances, isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = EventUiState(isLoading = false, error = e.message ?: "Ошибка загрузки события")
             }
@@ -138,7 +155,17 @@ class EventViewModel : ViewModel() {
     }
 
     suspend fun getFriendsList(userId: String): List<FriendUser> {
-        return eventRepository.getFriendsList(userId)
+        val friends = eventRepository.getFriendsList(userId)
+        return coroutineScope {
+            friends.map { friend ->
+                async {
+                    try {
+                        val user = userRepository.getUser(friend.user_id)
+                        friend.copy(photo_url = user.photo_url)
+                    } catch (_: Exception) { friend }
+                }
+            }.awaitAll()
+        }
     }
 
     suspend fun addParticipantSuspend(eventId: String, userId: String) {

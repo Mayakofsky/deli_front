@@ -101,6 +101,12 @@ fun ProfileScreen(
         }
     }
 
+    LaunchedEffect(profileState.paymentLink) {
+        if (profileState.paymentLink.isNotEmpty()) {
+            paymentLink = profileState.paymentLink
+        }
+    }
+
     val photoLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->

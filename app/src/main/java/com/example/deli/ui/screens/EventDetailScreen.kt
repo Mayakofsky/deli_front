@@ -306,15 +306,29 @@ fun EventDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Surface(
-                                                modifier = Modifier.size(28.dp).clip(CircleShape),
-                                                color = if (isBuyer) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    if (isBuyer) {
-                                                        Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                                                    } else {
-                                                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            if (p.photo_url != null) {
+                                                Surface(
+                                                    modifier = Modifier.size(28.dp).clip(CircleShape),
+                                                    color = MaterialTheme.colorScheme.primaryContainer
+                                                ) {
+                                                    AsyncImage(
+                                                        model = RetrofitClient.fullUrl(p.photo_url),
+                                                        contentDescription = null,
+                                                        modifier = Modifier.fillMaxSize(),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                }
+                                            } else {
+                                                Surface(
+                                                    modifier = Modifier.size(28.dp).clip(CircleShape),
+                                                    color = if (isBuyer) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        if (isBuyer) {
+                                                            Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                                        } else {
+                                                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        }
                                                     }
                                                 }
                                             }
@@ -534,7 +548,7 @@ fun AddParticipantDialog(
                                 try {
                                     val list = eventViewModel.getFriendsList(userId)
                                     friends.clear()
-                                    friends.addAll(list.map { EventParticipant(it.user_id, it.first_name, it.last_name) })
+                                    friends.addAll(list.map { EventParticipant(it.user_id, it.first_name, it.last_name, it.photo_url) })
                                 } catch (_: Exception) {}
                                 friendsLoading = false
                             }
@@ -568,7 +582,37 @@ fun AddParticipantDialog(
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     enabled = !adding
-                                ) { Text("${f.first_name} ${f.last_name}", modifier = Modifier.fillMaxWidth()) }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        if (f.photo_url != null) {
+                                            Surface(
+                                                modifier = Modifier.size(32.dp).clip(CircleShape),
+                                                color = MaterialTheme.colorScheme.primaryContainer
+                                            ) {
+                                                AsyncImage(
+                                                    model = RetrofitClient.fullUrl(f.photo_url),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                        } else {
+                                            Surface(
+                                                modifier = Modifier.size(32.dp).clip(CircleShape),
+                                                color = MaterialTheme.colorScheme.primaryContainer
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                                }
+                                            }
+                                        }
+                                        Text("${f.first_name} ${f.last_name}")
+                                    }
+                                }
                             }
                         }
                     }

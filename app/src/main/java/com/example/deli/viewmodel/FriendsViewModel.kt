@@ -2,9 +2,13 @@ package com.example.deli.viewmodel
 
 import com.example.deli.model.FriendUser
 import com.example.deli.repository.FriendRepository
+import com.example.deli.repository.UserRepository
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +30,22 @@ data class FriendsUiState(
 
 class FriendsViewModel : ViewModel() {
     private val friendRepository = FriendRepository()
+    private val userRepository = UserRepository()
 
     private val _uiState = MutableStateFlow(FriendsUiState())
+
+    private suspend fun enrichWithPhotoUrl(items: List<FriendUser>): List<FriendUser> {
+        return coroutineScope {
+            items.map { friend ->
+                async {
+                    try {
+                        val user = userRepository.getUser(friend.user_id)
+                        friend.copy(photo_url = user.photo_url)
+                    } catch (_: Exception) { friend }
+                }
+            }.awaitAll()
+        }
+    }
     val uiState: StateFlow<FriendsUiState> = _uiState.asStateFlow()
 
     fun searchUsers(query: String, currentUserId: String) {
@@ -47,6 +65,7 @@ class FriendsViewModel : ViewModel() {
             try {
                 friendRepository.sendFriendRequest(userId, friendId)
                 _uiState.value = _uiState.value.copy(sentIds = _uiState.value.sentIds + friendId)
+                loadSent(userId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message ?: "Ошибка отправки запроса")
             }
@@ -58,6 +77,7 @@ class FriendsViewModel : ViewModel() {
             try {
                 friendRepository.respondFriendRequest(userId, friendId, action)
                 loadIncoming(userId)
+                loadFriends(userId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message ?: "Ошибка ответа на запрос")
             }
@@ -80,7 +100,8 @@ class FriendsViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isIncomingLoading = true, error = null)
             try {
                 val items = friendRepository.getIncomingRequests(userId)
-                _uiState.value = _uiState.value.copy(incoming = items, isIncomingLoading = false)
+                val enriched = enrichWithPhotoUrl(items)
+                _uiState.value = _uiState.value.copy(incoming = enriched, isIncomingLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isIncomingLoading = false, error = e.message ?: "Ошибка загрузки входящих")
             }
@@ -92,7 +113,8 @@ class FriendsViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isFriendsLoading = true, error = null)
             try {
                 val items = friendRepository.getFriendsList(userId)
-                _uiState.value = _uiState.value.copy(friends = items, isFriendsLoading = false)
+                val enriched = enrichWithPhotoUrl(items)
+                _uiState.value = _uiState.value.copy(friends = enriched, isFriendsLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isFriendsLoading = false, error = e.message ?: "Ошибка загрузки друзей")
             }
@@ -104,7 +126,8 @@ class FriendsViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isSentLoading = true, error = null)
             try {
                 val items = friendRepository.getOutgoingRequests(userId)
-                _uiState.value = _uiState.value.copy(sent = items, isSentLoading = false)
+                val enriched = enrichWithPhotoUrl(items)
+                _uiState.value = _uiState.value.copy(sent = enriched, isSentLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isSentLoading = false, error = e.message ?: "Ошибка загрузки отправленных")
             }

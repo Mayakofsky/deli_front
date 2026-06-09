@@ -34,7 +34,8 @@ data class FriendUser(
     val user_id: String,
     val email: String,
     val first_name: String,
-    val last_name: String
+    val last_name: String,
+    val photo_url: String? = null
 )
 
 data class OkResponse(
